@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#111412" />
+  <title>TARKOV HUB</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0a0c0a; --surface:#111412; --panel:#161a16; --border:#252b25; --border2:#2e362e;
+      --text:#c8d4c8; --muted:#5a6b5a; --accent:#b8a547; --accent2:#4a7c59; --danger:#8b3a3a;
+      --mono:'Share Tech Mono',monospace; --sans:'Barlow Condensed',sans-serif;
+      --radius:3px; --nav-h:48px; --bot-nav-h:56px; --sidebar-w:280px; --safe-b:env(safe-area-inset-bottom,0px);
+    }
+    html,body { height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;-webkit-tap-highlight-color:transparent; }
+    button,input,select,textarea,a,.bot-tab,.nav-tab,.map-btn,.marker-item,.btn-sm { touch-action:manipulation; }
+    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+    #nav { position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--nav-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding-top:env(safe-area-inset-top,0px); }
+    #nav-logo { padding:0 16px;font-family:var(--mono);font-size:13px;letter-spacing:4px;color:var(--accent);border-right:1px solid var(--border);height:100%;display:flex;align-items:center;white-space:nowrap;user-select:none;flex-shrink:0; }
+    #nav-logo span{color:var(--muted);font-size:10px;margin-left:6px;letter-spacing:2px}
+    .nav-tabs{display:flex;height:100%}
+    .nav-tab{padding:0 16px;display:flex;align-items:center;gap:7px;font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-right:1px solid var(--border);transition:color .15s,background .15s;user-select:none}
+    .nav-tab:hover{color:var(--text);background:var(--panel)} .nav-tab.active{color:var(--accent);background:var(--panel)}
+    .nav-tab .dot{width:5px;height:5px;border-radius:50%;background:var(--muted);transition:background .15s} .nav-tab.active .dot{background:var(--accent)}
+    #nav-right{margin-left:auto;display:flex;align-items:center;height:100%}
+    .nav-status{padding:0 12px;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--muted);border-left:1px solid var(--border);height:100%;display:flex;align-items:center;gap:6px}
+    .status-dot{width:5px;height:5px;border-radius:50%;background:var(--accent2);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    #mobile-menu-btn{display:none;width:48px;height:48px;margin-left:auto;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);flex-shrink:0}
+    #mobile-menu-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+    #bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;height:calc(var(--bot-nav-h) + var(--safe-b));background:var(--surface);border-top:1px solid var(--border);padding-bottom:var(--safe-b)}
+    #bot-nav-inner{display:flex;height:var(--bot-nav-h)}
+    .bot-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--muted);transition:color .15s;border:none;background:none;font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+    .bot-tab.active{color:var(--accent)} .bot-tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+    #app{position:fixed;top:var(--nav-h);left:0;right:0;bottom:0;display:flex}
+    #sidebar-overlay{display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(2px)}
+    #sidebar-overlay.open{display:block}
+    #sidebar{width:var(--sidebar-w);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;flex-shrink:0;transition:width .2s ease;z-index:200;order:2}
+    #sidebar.collapsed{width:0;overflow:hidden}
+    .sidebar-section{border-bottom:1px solid var(--border);flex-shrink:0}
+    .sidebar-section-header{padding:12px 14px;font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;min-height:44px}
+    .sidebar-section-header:hover{color:var(--text)}
+    .map-btn{width:100%;padding:11px 14px;display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:var(--sans);font-weight:600;font-size:14px;letter-spacing:.5px;text-align:left;transition:color .12s,background .12s;min-height:48px}
+    .map-btn:active{background:var(--panel)} .map-btn.active{color:var(--accent);background:var(--panel)}
+    .map-btn .map-icon{width:30px;height:22px;background:var(--border2);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);flex-shrink:0}
+    .map-btn.active .map-icon{background:rgba(184,165,71,.12);color:var(--accent)}
+    #layer-toggles{padding:8px 10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    .layer-toggle{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--panel);cursor:pointer;transition:all .15s;position:relative;min-height:56px;justify-content:center}
+    .layer-toggle.off{opacity:.35;filter:grayscale(.8)} .layer-toggle svg{width:18px;height:18px;flex-shrink:0}
+    .layer-toggle-label{font-family:var(--mono);font-size:7px;letter-spacing:.5px;text-align:center;line-height:1.2;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .layer-toggle:not(.off) .layer-toggle-label{color:var(--text)}
+    .layer-toggle-allrow{grid-column:1/-1;display:flex;gap:6px;padding:0 0 2px}
+    .layer-toggle-allrow button{flex:1;padding:6px;background:var(--panel);border:1px solid var(--border2);color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:1px;border-radius:var(--radius);cursor:pointer;transition:all .12s;min-height:32px}
+    .layer-toggle-allrow button:hover{color:var(--accent);border-color:var(--accent)}
+    #marker-list{overflow-y:visible}
+    .marker-item{padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid var(--border);min-height:48px}
+    .marker-item:active{background:var(--panel)}
+    .marker-item-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+    .marker-item-cat{font-family:var(--mono);font-size:9px;color:var(--muted)}
+    .btn-sm{padding:8px 12px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;letter-spacing:1px;border-radius:var(--radius);cursor:pointer;transition:all .12s;min-height:36px}
+    .btn-sm:active{opacity:.7} .btn-sm.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+    #main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-width:0}
+    #map-view-container{flex:1;position:relative;background:#0d0f0d;display:flex;flex-direction:column}
+    #map{width:100%;height:100%;touch-action:none}
+    .leaflet-container{background:#0d0f0d!important} .leaflet-control-zoom{border:1px solid var(--border2)!important;box-shadow:none!important}
+    .leaflet-control-zoom a{background:var(--surface)!important;color:var(--text)!important;border-color:var(--border2)!important;font-size:18px!important;width:36px!important;height:36px!important;line-height:36px!important}
+    .leaflet-control-zoom a:hover{background:var(--panel)!important;color:var(--accent)!important} .leaflet-control-attribution{display:none!important}
+    #coords-display{position:absolute;top:10px;right:10px;z-index:500;background:rgba(17,20,18,.85);border:1px solid var(--border2);padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);border-radius:var(--radius);backdrop-filter:blur(4px);pointer-events:none}
+    #edit-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(184,165,71,.12);border:1px solid var(--accent);padding:6px 14px;font-family:var(--mono);font-size:10px;color:var(--accent);border-radius:var(--radius);letter-spacing:1px;display:none;pointer-events:none;white-space:nowrap}
+    #edit-hint.show{display:block}
+    .lp-ripple{position:absolute;border-radius:50%;width:60px;height:60px;margin:-30px;border:2px solid var(--accent);opacity:0;animation:lp-anim .6s ease-out forwards;pointer-events:none;z-index:600}
+    @keyframes lp-anim{from{transform:scale(.2);opacity:.8}to{transform:scale(1.2);opacity:0}}
+    #map-toolbar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:4px;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:4px}
+    .tool-btn{padding:8px 12px;background:none;border:1px solid transparent;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;border-radius:2px;transition:all .12s;white-space:nowrap;min-height:38px}
+    .tool-btn:active{opacity:.7} .tool-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(184,165,71,.08)}
+    #map-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d0f0d;z-index:10;pointer-events:none}
+    #map-placeholder.hidden{display:none}
+    .placeholder-label{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+    .placeholder-grid{width:120px;height:80px;opacity:.08;background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:20px 20px}
+    #sidebar-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:600;background:var(--surface);border:1px solid var(--border2);border-right:none;width:14px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:color .12s;border-radius:3px 0 0 3px}
+    #sidebar-toggle:hover{color:var(--accent)}
+    .map-marker-icon{width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--mc) 18%,transparent);border:2px solid var(--mc);display:flex;align-items:center;justify-content:center;color:var(--mc);box-shadow:0 2px 8px rgba(0,0,0,.7),0 0 0 1px rgba(0,0,0,.4);cursor:pointer;transition:transform .1s}
+    .map-marker-icon:active{transform:scale(.9)} .map-marker-icon svg{width:14px;height:14px;pointer-events:none}
+    .player-location-ring{width:16px;height:16px;border:2px solid var(--accent);border-radius:50%;animation:ring 1.5s ease-out infinite;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+    @keyframes ring{from{transform:translate(-50%,-50%) scale(.5);opacity:1}to{transform:translate(-50%,-50%) scale(2.5);opacity:0}}
+    .leaflet-popup-content-wrapper{background:var(--surface)!important;border:1px solid var(--border2)!important;border-radius:var(--radius)!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important;color:var(--text)!important;padding:0!important;min-width:220px}
+    .leaflet-popup-tip-container{display:none!important} .leaflet-popup-close-button{color:var(--muted)!important;font-size:20px!important;top:8px!important;right:10px!important;width:32px!important;height:32px!important}
+    .leaflet-popup-close-button:hover{color:var(--accent)!important}
+    .popup-inner{padding:14px 16px} .popup-cat{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+    .popup-title{font-family:var(--sans);font-weight:700;font-size:17px;color:var(--text);margin-bottom:6px}
+    .popup-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+    .popup-img{width:100%;border-radius:2px;margin-bottom:10px;border:1px solid var(--border2)}
+    .popup-coords{font-family:var(--mono);font-size:9px;color:var(--border2);border-top:1px solid var(--border);padding-top:8px;margin-top:4px}
+    .popup-actions{display:flex;gap:6px;margin-top:10px} .popup-actions .btn-sm{min-height:40px}
+    #modal-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
+    #modal-overlay.open{display:flex}
+    #modal{background:var(--surface);border:1px solid var(--border2);width:100%;max-width:480px;border-radius:12px 12px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.8);animation:modal-up .2s ease;max-height:92dvh;display:flex;flex-direction:column;padding-bottom:var(--safe-b)}
+    @keyframes modal-up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+    .modal-drag-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:10px auto 2px;flex-shrink:0}
+    .modal-header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+    .modal-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--accent)}
+    .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+    .modal-close:hover{color:var(--text)}
+    .modal-body{padding:14px 16px;display:flex;flex-direction:column;gap:11px;overflow-y:auto;flex:1}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+    .form-input,.form-select,.form-textarea{padding:10px 12px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--sans);font-size:15px;border-radius:var(--radius);min-height:46px}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent)}
+    .form-select{appearance:none;cursor:pointer} .form-textarea{resize:vertical;min-height:80px}
+    .form-input::placeholder,.form-textarea::placeholder{color:var(--muted)}
+    .modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+    .modal-footer .btn-sm{min-height:46px;padding:0 20px;font-size:11px}
+    #img-drop{border:1px dashed var(--border2);border-radius:var(--radius);padding:16px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--muted);min-height:52px;display:flex;align-items:center;justify-content:center;transition:all .12s}
+    #img-drop.drag-over{border-color:var(--accent);background:rgba(184,165,71,.04);color:var(--text)}
+    #img-preview{display:none;width:100%;border-radius:2px;margin-top:6px;max-height:140px;object-fit:cover}
+    #content-area{display:none;flex-direction:column;flex:1;overflow:hidden}
+    #content-area.active{display:flex}
+    .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1}
+    .table-scroll table{min-width:560px;width:100%;border-collapse:collapse}
+    #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);z-index:3000;background:var(--surface);border:1px solid var(--border2);padding:8px 18px;border-radius:var(--radius);font-family:var(--mono);font-size:11px;color:var(--text);opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)} #toast.error{border-color:var(--danger);color:#e06060}
+    .edit-mode-active #map{cursor:crosshair!important}
+    @media(max-width:640px){
+      #bot-nav{display:block} .nav-tabs{display:none} .nav-status{display:none}
+      #nav-logo{border-right:none;padding-right:8px} #mobile-menu-btn{display:flex} #nav-right{display:none}
+      #sidebar{position:fixed;top:0;bottom:0;right:0;left:auto;width:var(--sidebar-w)!important;transform:translateX(110%);transition:transform .25s ease;z-index:950;padding-top:var(--nav-h);padding-bottom:calc(var(--safe-b) + 8px);overflow-y:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-left:1px solid var(--border);border-right:none}
+      #sidebar.mobile-open{transform:translateX(0)} #sidebar.collapsed{width:var(--sidebar-w)!important;overflow-y:auto!important}
+      #sidebar-toggle{display:none} #app{bottom:calc(var(--bot-nav-h) + var(--safe-b))}
+      #coords-display{display:none} #map-toolbar{bottom:10px} .tool-btn{padding:8px 10px;font-size:9px}
+      .leaflet-control-zoom a{width:40px!important;height:40px!important;line-height:40px!important;font-size:20px!important}
+      .content-header{flex-wrap:wrap} .content-header input,.content-header select{max-width:100%!important;width:100%!important;min-width:0!important}
+      #toast{bottom:calc(var(--bot-nav-h) + var(--safe-b) + 12px)}
+    }
+  </style>
+</head>
+<body>
+
+<nav id="nav">
+  <div id="nav-logo">TARKOV<span>HUB</span></div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-view="map" onclick="switchView('map')"><span class="dot"></span>MAPS</div>
+    <div class="nav-tab" data-view="market" onclick="switchView('market')"><span class="dot"></span>MARKET</div>
+    <div class="nav-tab" data-view="quests" onclick="switchView('quests')"><span class="dot"></span>QUESTS</div>
+  </div>
+  <div id="nav-right">
+    <div class="nav-status"><span class="status-dot"></span>API LIVE</div>
+    <div class="nav-status" id="nav-wipe" style="color:var(--accent)">──</div>
+  </div>
+  <button id="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Menu">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</nav>
+
+<div id="app">
+  <div id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">MAPS <span style="font-size:8px">▼</span></div>
+      <div class="sidebar-section-body" id="map-list"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">LAYERS <span style="font-size:8px">▼</span></div>
+      <div class="sidebar-section-body" id="layer-toggles"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">MARKERS <span id="marker-count" style="font-family:var(--mono);font-size:8px;">0</span></div>
+      <div class="sidebar-section-body" id="marker-list"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">LOCATE ME <span style="font-size:8px">▼</span></div>
+      <div class="sidebar-section-body" style="padding:10px 12px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px;line-height:1.6;">Paste F1 coords or screenshot filename:<br><span style="color:var(--border2);">e.g. 235.0, 5.2, -104.3</span></div>
+        <input type="text" id="loc-paste" placeholder="X, Y, Z  — paste here"
+          style="width:100%;padding:10px 12px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;border-radius:var(--radius);min-height:44px;letter-spacing:.5px;"
+          oninput="onCoordInput(this)" onkeydown="if(event.key==='Enter')locatePlayer()" />
+        <div id="coord-parse-preview" style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-top:5px;min-height:14px;"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn-sm primary" onclick="locatePlayer();closeMobileSidebar();" style="flex:1;">LOCATE</button>
+          <button class="btn-sm" onclick="clearPlayerMarker()">CLR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="map-view-container">
+      <div id="map-placeholder"><div class="placeholder-grid"></div><div class="placeholder-label">SELECT A MAP</div></div>
+      <div id="map"></div>
+      <div id="coords-display">──</div>
+      <div id="edit-hint">LONG-PRESS MAP TO ADD MARKER</div>
+      <div id="map-toolbar">
+        <button class="tool-btn" id="btn-edit" onclick="toggleEditMode()">✛ ADD</button>
+        <button class="tool-btn" id="btn-fit" onclick="fitMap()">⊡ FIT</button>
+        <button class="tool-btn" id="btn-clear-player" onclick="clearPlayerMarker()" style="display:none">⊠ POS</button>
+      </div>
+      <button id="sidebar-toggle" onclick="toggleSidebar()">›</button>
+    </div>
+    <div id="content-area"></div>
+  </div>
+</div>
+
+<div id="bot-nav"><div id="bot-nav-inner">
+  <button class="bot-tab active" data-view="map" onclick="switchView('map')">
+    <svg viewBox="0 0 24 24"><polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>MAPS
+  </button>
+  <button class="bot-tab" data-view="market" onclick="switchView('market')">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>MARKET
+  </button>
+  <button class="bot-tab" data-view="quests" onclick="switchView('quests')">
+    <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>QUESTS
+  </button>
+</div></div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <div class="modal-drag-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title-text">ADD MARKER</span>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="m-name" placeholder="e.g. Marked Room Key Spawn" /></div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="m-cat" style="background:var(--panel);border:1px solid var(--border2);color:var(--text);">
+          <optgroup label="── Spawns & Extracts">
+            <option value="pmc_spawn">PMC Spawn</option><option value="pmc_exfil">PMC Extract</option>
+            <option value="scav_spawn">Scav Spawn</option><option value="scav_exfil">Scav Extract</option><option value="boss">Boss Spawn</option>
+          </optgroup>
+          <optgroup label="── Quests & Doors"><option value="quest">Quest</option><option value="locked_door">Locked Door</option></optgroup>
+          <optgroup label="── Loot">
+            <option value="loot_med">Medical</option><option value="loot_tech">Technical</option><option value="loot_elec">Electrical</option>
+            <option value="loot_food">Food & Water</option><option value="loot_weapon">Weapons & Mods</option><option value="loot_ammo">Ammo</option>
+            <option value="loot_valuables">Valuables</option><option value="loot_misc">Loose Loot</option>
+          </optgroup>
+          <optgroup label="── Other"><option value="stash">Stash / Cache</option><option value="hazard">Hazard / Mine</option></optgroup>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="m-desc" placeholder="Notes, tips, requirements..."></textarea></div>
+      <div class="form-group">
+        <label class="form-label">Image (optional)</label>
+        <div id="img-drop" onclick="document.getElementById('img-file').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleImgDrop(event)">TAP TO UPLOAD IMAGE</div>
+        <input type="file" id="img-file" accept="image/*" style="display:none" onchange="handleImgSelect(event)" />
+        <img id="img-preview" alt="preview" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal()">CANCEL</button>
+      <button class="btn-sm primary" onclick="saveMarker()">SAVE</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const TARKOV_API='https://api.tarkov.dev/graphql';
+const CATEGORY_CONFIG={
+  pmc_spawn:{color:'#9b6fce',label:'PMC Spawn',svg:'<path d="M12 2l0 10M12 2l-4 5M12 2l4 5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="18" r="4" fill="currentColor" opacity=".3"/>'},
+  pmc_exfil:{color:'#4a9e6b',label:'PMC Extract',svg:'<rect x="3" y="3" width="10" height="16" rx="1"/><path d="M13 8l5 4-5 4"/><line x1="18" y1="12" x2="9" y2="12" stroke-linecap="round"/>'},
+  scav_spawn:{color:'#7a6a3a',label:'Scav Spawn',svg:'<path d="M12 2l0 10M12 2l-4 5M12 2l4 5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 1"/><circle cx="12" cy="18" r="4" fill="currentColor" opacity=".3"/>'},
+  scav_exfil:{color:'#6a8a4a',label:'Scav Extract',svg:'<rect x="3" y="3" width="10" height="16" rx="1"/><path d="M13 8l5 4-5 4" stroke-dasharray="2 1"/><line x1="18" y1="12" x2="9" y2="12" stroke-linecap="round" stroke-dasharray="2 1"/>'},
+  locked_door:{color:'#b8a547',label:'Locked Door',svg:'<rect x="8" y="11" width="8" height="8" rx="1"/><path d="M10 11V8a2 2 0 014 0v3"/><circle cx="12" cy="15" r="1" fill="currentColor"/>'},
+  quest:{color:'#e8c84a',label:'Quest',svg:'<path d="M12 3a4 4 0 013 6.65c-.5.57-1 1.1-1 1.85V13"/><circle cx="12" cy="17" r="1" fill="currentColor"/>'},
+  loot_med:{color:'#e05a5a',label:'Medical',svg:'<rect x="9" y="3" width="6" height="18" rx="1"/><rect x="3" y="9" width="18" height="6" rx="1"/>'},
+  loot_tech:{color:'#5a8ae0',label:'Technical',svg:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 000-1.4l-1.6-1.6a1 1 0 00-1.4 0z"/><path d="M5 20L2 22l2-3 9.9-9.9"/><line x1="13" y1="7" x2="7" y2="13"/>'},
+  loot_elec:{color:'#e0c84a',label:'Electrical',svg:'<polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>'},
+  loot_food:{color:'#8ae08a',label:'Food & Water',svg:'<path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>'},
+  loot_weapon:{color:'#c07a3a',label:'Weapons & Mods',svg:'<path d="M3 12h14l3-3-2-2H5l-3 3 1 2z"/><line x1="8" y1="12" x2="8" y2="16"/><rect x="6" y="16" width="4" height="2" rx=".5"/>'},
+  loot_ammo:{color:'#e08a3a',label:'Ammo',svg:'<rect x="10" y="2" width="4" height="12" rx="2"/><path d="M10 14h4l1 3H9z"/><line x1="12" y1="17" x2="12" y2="22"/>'},
+  loot_valuables:{color:'#c8a8e8',label:'Valuables',svg:'<polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>'},
+  loot_misc:{color:'#5a6b5a',label:'Loose Loot',svg:'<circle cx="9" cy="9" r="2"/><circle cx="15" cy="9" r="2"/><circle cx="12" cy="15" r="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="9" x2="12" y2="15"/><line x1="15" y1="9" x2="12" y2="15"/>'},
+  stash:{color:'#8a7a5a',label:'Stash / Cache',svg:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>'},
+  hazard:{color:'#c03a3a',label:'Hazard / Mine',svg:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" stroke-linecap="round"/>'},
+  boss:{color:'#e05a8a',label:'Boss Spawn',svg:'<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>'},
+};
+const categoryVisible=Object.fromEntries(Object.keys(CATEGORY_CONFIG).map(k=>[k,true]));
+const MAPS=[
+  {id:'customs',name:'Customs',short:'CUS',img:'./customs.png',bounds:{minX:-371,maxX:698,minZ:-307,maxZ:237}},
+  {id:'woods',name:'Woods',short:'WDS',img:'./woods.png',bounds:{minX:-695,maxX:650,minZ:-945,maxZ:470}},
+  {id:'factory',name:'Factory',short:'FAC',img:'./factory.png',bounds:{minX:-67,maxX:77,minZ:-66,maxZ:70}},
+  {id:'interchange',name:'Interchange',short:'INT',img:'./interchange.png',bounds:{minX:-364,maxX:530,minZ:-439,maxZ:452},floors:['Ground','Mall','Roof']},
+  {id:'shoreline',name:'Shoreline',short:'SHR',img:'./shoreline.png',bounds:{minX:-480,maxX:430,minZ:-580,maxZ:380}},
+  {id:'reserve',name:'Reserve',short:'RSV',img:'./reserve.png',bounds:{minX:-415,maxX:370,minZ:-375,maxZ:400}},
+  {id:'lighthouse',name:'Lighthouse',short:'LGT',img:'./lighthouse.png',bounds:{minX:-680,maxX:540,minZ:-680,maxZ:400}},
+  {id:'streets',name:'Streets',short:'STR',img:'./streets.png',bounds:{minX:-415,maxX:330,minZ:-430,maxZ:310},floors:['Ground','Floor 2','Floor 3','Roof']},
+  {id:'ground-zero',name:'Ground Zero',short:'GZR',img:'./groundzero.png',bounds:{minX:-250,maxX:250,minZ:-250,maxZ:250},floors:['Underground','Ground','Floor 2','Floor 3']},
+  {id:'the-lab',name:'The Lab',short:'LAB',img:'./thelab.png',bounds:{minX:-115,maxX:115,minZ:-95,maxZ:115},floors:['Floor 1','Floor 2']},
+  {id:'terminal',name:'Terminal',short:'TRM',img:'./terminal.png',bounds:{minX:-300,maxX:300,minZ:-300,maxZ:300}},
+  {id:'labyrinth',name:'Labyrinth',short:'LBR',img:'./labryinth.png',bounds:{minX:-200,maxX:200,minZ:-200,maxZ:200}},
+];
+const isMobile=()=>window.matchMedia('(max-width:640px)').matches;
+let state={activeMap:null,activeView:'map',editMode:false,pendingLatLng:null,pendingImgDataUrl:null,playerMarker:null,sidebarOpen:true};
+let leafletMap=null,markersLayer=null,imageOverlay=null;
+let lpTimer=null,lpStartPos=null,lpActivePointerId=null;
+function fitMap(){if(imageOverlay)leafletMap.fitBounds(imageOverlay.getBounds(),{padding:[10,10]});}
+function storageKey(id){return`tkv_markers_${id}`;}
+function loadMarkers(id){try{return JSON.parse(localStorage.getItem(storageKey(id)))||[];}catch(e){return[];}}
+function saveMarkersStore(id,m){localStorage.setItem(storageKey(id),JSON.stringify(m));}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('map-list').innerHTML=MAPS.map(m=>`<button class="map-btn" data-mapid="${m.id}" onclick="selectMap('${m.id}');closeMobileSidebar();"><div class="map-icon">${m.short}</div>${m.name}</button>`).join('');
+  leafletMap=L.map('map',{crs:L.CRS.Simple,minZoom:-3,maxZoom:7,zoomSnap:0.25,zoomDelta:0.5,preferCanvas:true,attributionControl:false,touchZoom:true,bounceAtZoomLimits:false});
+  markersLayer=L.layerGroup().addTo(leafletMap);
+  leafletMap.on('mousemove',e=>{if(e.originalEvent&&e.originalEvent.pointerType!=='touch')document.getElementById('coords-display').textContent=`${Math.round(e.latlng.lng)}, ${Math.round(e.latlng.lat)}`;});
+  leafletMap.on('contextmenu',e=>{if(!state.editMode||isMobile())return;e.originalEvent.preventDefault();state.pendingLatLng=e.latlng;openModal();});
+  initLongPress();
+  document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+  fetchApiStatus();
+  buildLayerToggles();
+  // Read ?view= param from landing page
+  const urlView=new URLSearchParams(window.location.search).get('view');
+  if(urlView==='market'){switchView('market');}
+  else if(urlView==='quests'){switchView('quests');}
+  else{switchView('map');selectMap('customs');}
+});
+
+function initLongPress(){const el=leafletMap.getContainer();el.addEventListener('pointerdown',onLP_Down,{passive:true});el.addEventListener('pointerup',onLP_Up,{passive:true});el.addEventListener('pointercancel',onLP_Cancel,{passive:true});el.addEventListener('pointermove',onLP_Move,{passive:true});}
+function onLP_Down(e){if(!state.editMode)return;if(lpActivePointerId!==null){onLP_Cancel();return;}if(e.pointerType==='mouse')return;lpActivePointerId=e.pointerId;lpStartPos={x:e.clientX,y:e.clientY};lpTimer=setTimeout(()=>{lpTimer=null;if(!state.activeMap||!leafletMap.getCenter)return;try{const rect=leafletMap.getContainer().getBoundingClientRect();const containerPoint=L.point(lpStartPos.x-rect.left,lpStartPos.y-rect.top);state.pendingLatLng=leafletMap.containerPointToLatLng(containerPoint);showRipple(lpStartPos.x,lpStartPos.y);openModal();}catch(e){}},550);}
+function onLP_Up(e){if(e.pointerId!==lpActivePointerId)return;onLP_Cancel();}
+function onLP_Cancel(){if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}lpActivePointerId=null;lpStartPos=null;}
+function onLP_Move(e){if(e.pointerId!==lpActivePointerId||!lpTimer||!lpStartPos)return;const dx=e.clientX-lpStartPos.x,dy=e.clientY-lpStartPos.y;if(dx*dx+dy*dy>100)onLP_Cancel();}
+function showRipple(cx,cy){const rect=document.getElementById('map').getBoundingClientRect();const el=document.createElement('div');el.className='lp-ripple';el.style.left=(cx-rect.left)+'px';el.style.top=(cy-rect.top)+'px';document.getElementById('map').appendChild(el);setTimeout(()=>el.remove(),700);}
+
+let activeFloor=0;
+function selectMap(id){
+  state.activeMap=id;activeFloor=0;
+  document.querySelectorAll('.map-btn').forEach(b=>b.classList.toggle('active',b.dataset.mapid===id));
+  document.getElementById('map-placeholder').classList.add('hidden');
+  if(imageOverlay){imageOverlay.remove();imageOverlay=null;}
+  const sw=document.getElementById('floor-switcher');if(sw)sw.remove();
+  const mapData=MAPS.find(m=>m.id===id);if(!mapData)return;
+  const{bounds}=mapData;state.mapBounds=bounds;
+  const lb=[[bounds.minZ,bounds.minX],[bounds.maxZ,bounds.maxX]];
+  showMapLoading(true);
+  imageOverlay=L.imageOverlay(mapData.img,lb,{opacity:1,interactive:false,crossOrigin:false}).addTo(leafletMap);
+  imageOverlay.on('load',()=>showMapLoading(false));
+  imageOverlay.on('error',()=>{showMapLoading(false);console.warn('Image failed to load:',mapData.img);});
+  leafletMap.fitBounds(lb,{padding:[10,10]});
+  leafletMap.setMaxBounds([[bounds.minZ-300,bounds.minX-300],[bounds.maxZ+300,bounds.maxX+300]]);
+  buildFloorSwitcher(mapData.floors,mapData.id);
+  setTimeout(()=>leafletMap.invalidateSize(),300);
+  renderMarkers();
+}
+function buildFloorSwitcher(floors,mapId){const old=document.getElementById('floor-switcher');if(old)old.remove();if(!floors||floors.length<2)return;const sw=document.createElement('div');sw.id='floor-switcher';sw.style.cssText=`position:absolute;bottom:48px;left:50%;transform:translateX(-50%);z-index:600;display:flex;gap:4px;background:rgba(13,15,13,.9);border:1px solid var(--border2);border-radius:4px;padding:4px;pointer-events:all;`;floors.forEach((label,i)=>{const btn=document.createElement('button');btn.textContent=label;btn.className='tool-btn'+(i===0?' active':'');btn.style.cssText='min-width:60px;font-size:9px;padding:4px 8px;';btn.onclick=()=>switchFloor(i,mapId,floors,sw);sw.appendChild(btn);});document.getElementById('map-view-container').appendChild(sw);}
+function switchFloor(index,mapId,floors,sw){activeFloor=index;sw.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===index));if(!imageOverlay)return;const mapData=MAPS.find(m=>m.id===mapId);if(!mapData)return;const src=index===0?mapData.img:mapData.img.replace('.png',`-${index}.png`);showMapLoading(true);imageOverlay.setUrl(src);imageOverlay.on('load',()=>showMapLoading(false));}
+function showMapLoading(show){let el=document.getElementById('map-loading');if(!el&&show){el=document.createElement('div');el.id='map-loading';el.style.cssText=`position:absolute;inset:0;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d0f0d;pointer-events:none;`;el.innerHTML=`<div style="width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div><div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);">LOADING MAP</div>`;if(!document.getElementById('spin-style')){const s=document.createElement('style');s.id='spin-style';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}document.getElementById('map-view-container').appendChild(el);}else if(el&&!show){el.remove();}}
+
+function renderMarkers(){markersLayer.clearLayers();if(!state.activeMap)return;const markers=loadMarkers(state.activeMap);markers.filter(m=>categoryVisible[m.cat]).forEach(m=>{const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG.loot_misc;const icon=L.divIcon({html:`<div class="map-marker-icon" style="--mc:${cfg.color}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg></div>`,className:'',iconSize:[32,32],iconAnchor:[16,16]});L.marker([m.lat,m.lng],{icon}).addTo(markersLayer).on('click',function(){showMarkerPopup(this,m);});});const el=document.getElementById('marker-list');document.getElementById('marker-count').textContent=markers.length;if(!markers.length){el.innerHTML=`<div style="padding:12px 14px;font-family:var(--mono);font-size:10px;color:var(--muted);">NO MARKERS YET<br><span style="font-size:9px;color:var(--border2);">${isMobile()?'Long-press':'Right-click'} in ADD mode</span></div>`;return;}el.innerHTML=markers.map(m=>{const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG.loot_misc;return`<div class="marker-item" onclick="flyToMarker(${m.lat},${m.lng})"><div style="background:${cfg.color}22;border:1px solid ${cfg.color};border-radius:4px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${cfg.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg></div><div class="marker-item-name">${escHtml(m.name)}</div><div class="marker-item-cat">${cfg.label.toUpperCase()}</div></div>`;}).join('');}
+function showMarkerPopup(lm,m){const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG.loot_misc;L.popup({maxWidth:300,closeButton:true}).setLatLng([m.lat,m.lng]).setContent(`<div class="popup-inner"><div class="popup-cat" style="color:${cfg.color};display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${cfg.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg>${cfg.label}</div><div class="popup-title">${escHtml(m.name)}</div>${m.img?`<img class="popup-img" src="${m.img}" alt=""/>`:''}${m.desc?`<div class="popup-desc">${escHtml(m.desc)}</div>`:''}<div class="popup-coords">${m.lat.toFixed(2)}, ${m.lng.toFixed(2)}</div><div class="popup-actions"><button class="btn-sm" onclick="editMarker('${m.id}')">EDIT</button><button class="btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMarker('${m.id}')">DELETE</button></div></div>`).openOn(leafletMap);}
+function flyToMarker(lat,lng){switchView('map');closeMobileSidebar();leafletMap.flyTo([lat,lng],1,{duration:.6});}
+function openModal(title='ADD MARKER'){document.getElementById('modal-title-text').textContent=title;document.getElementById('modal-overlay').classList.add('open');state.pendingImgDataUrl=null;document.getElementById('img-preview').style.display='none';document.getElementById('img-drop').textContent='TAP TO UPLOAD IMAGE';document.getElementById('m-name').value='';document.getElementById('m-desc').value='';setTimeout(()=>document.getElementById('m-name').focus(),120);}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');state.pendingLatLng=null;window._modalSaveOverride=null;}
+function saveMarker(){if(window._modalSaveOverride){window._modalSaveOverride();return;}if(!state.pendingLatLng||!state.activeMap)return;const name=document.getElementById('m-name').value.trim();if(!name){toast('Name is required',true);return;}const m={id:`m_${Date.now()}`,name,cat:document.getElementById('m-cat').value,desc:document.getElementById('m-desc').value.trim(),img:state.pendingImgDataUrl||null,lat:state.pendingLatLng.lat,lng:state.pendingLatLng.lng,created:Date.now()};const ms=loadMarkers(state.activeMap);ms.push(m);saveMarkersStore(state.activeMap,ms);closeModal();renderMarkers();toast('Marker saved');}
+function deleteMarker(id){if(!state.activeMap)return;saveMarkersStore(state.activeMap,loadMarkers(state.activeMap).filter(m=>m.id!==id));leafletMap.closePopup();renderMarkers();toast('Marker deleted');}
+function editMarker(id){const ms=loadMarkers(state.activeMap);const m=ms.find(x=>x.id===id);if(!m)return;leafletMap.closePopup();state.pendingLatLng={lat:m.lat,lng:m.lng};state.pendingImgDataUrl=m.img||null;openModal('EDIT MARKER');document.getElementById('m-name').value=m.name;document.getElementById('m-cat').value=m.cat;document.getElementById('m-desc').value=m.desc||'';if(m.img){const p=document.getElementById('img-preview');p.src=m.img;p.style.display='block';document.getElementById('img-drop').textContent='Image loaded — tap to replace';}window._modalSaveOverride=()=>{const name=document.getElementById('m-name').value.trim();if(!name){toast('Name is required',true);return;}saveMarkersStore(state.activeMap,ms.map(x=>x.id===id?{...x,name,cat:document.getElementById('m-cat').value,desc:document.getElementById('m-desc').value.trim(),img:state.pendingImgDataUrl!==undefined?state.pendingImgDataUrl:x.img}:x));window._modalSaveOverride=null;closeModal();renderMarkers();toast('Marker updated');};}
+function handleImgSelect(e){const f=e.target.files[0];if(f)readImgFile(f);}
+function handleImgDrop(e){e.preventDefault();document.getElementById('img-drop').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))readImgFile(f);}
+function readImgFile(file){const r=new FileReader();r.onload=ev=>{state.pendingImgDataUrl=ev.target.result;const p=document.getElementById('img-preview');p.src=ev.target.result;p.style.display='block';document.getElementById('img-drop').textContent=file.name;};r.readAsDataURL(file);}
+function toggleEditMode(){state.editMode=!state.editMode;const btn=document.getElementById('btn-edit');const hint=document.getElementById('edit-hint');btn.classList.toggle('active',state.editMode);hint.classList.toggle('show',state.editMode);document.getElementById('map-view-container').classList.toggle('edit-mode-active',state.editMode);btn.textContent=state.editMode?'✕ CANCEL':'✛ ADD';hint.textContent=isMobile()?'LONG-PRESS MAP TO ADD MARKER':'RIGHT-CLICK MAP TO ADD MARKER';}
+function buildLayerToggles(){const el=document.getElementById('layer-toggles');let html=`<div class="layer-toggle-allrow"><button onclick="setAllLayers(true)">ALL ON</button><button onclick="setAllLayers(false)">ALL OFF</button></div>`;html+=Object.entries(CATEGORY_CONFIG).map(([id,cfg])=>`<button class="layer-toggle" id="lt-${id}" data-cat="${id}" onclick="toggleLayer('${id}')" title="${cfg.label}"><svg viewBox="0 0 24 24" fill="none" stroke="${cfg.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg><span class="layer-toggle-label">${cfg.label}</span></button>`).join('');el.innerHTML=html;}
+function toggleLayer(cat){categoryVisible[cat]=!categoryVisible[cat];const btn=document.getElementById(`lt-${cat}`);if(btn)btn.classList.toggle('off',!categoryVisible[cat]);renderMarkers();}
+function setAllLayers(on){Object.keys(categoryVisible).forEach(k=>{categoryVisible[k]=on;const btn=document.getElementById(`lt-${k}`);if(btn)btn.classList.toggle('off',!on);});renderMarkers();}
+function filterCategory(){}
+function parseCoords(raw){const nums=raw.match(/-?\d+\.?\d*/g);if(!nums||nums.length<2)return null;const x=parseFloat(nums[0]);const y=nums.length>=3?parseFloat(nums[1]):null;const z=nums.length>=3?parseFloat(nums[2]):parseFloat(nums[1]);if(isNaN(x)||isNaN(z))return null;return{x,y,z};}
+function onCoordInput(input){const parsed=parseCoords(input.value);const preview=document.getElementById('coord-parse-preview');if(!preview)return;preview.textContent=parsed?`X: ${parsed.x.toFixed(1)}  Y: ${parsed.y!=null?parsed.y.toFixed(1):'—'}  Z: ${parsed.z.toFixed(1)}`:(input.value.length>2?'Cannot parse coordinates':'');}
+function locatePlayer(){const raw=document.getElementById('loc-paste').value;const parsed=parseCoords(raw);if(!parsed){toast('Paste coordinates or a screenshot filename',true);return;}clearPlayerMarker();const lat=parsed.z,lng=parsed.x;const icon=L.divIcon({html:`<div style="position:relative;width:20px;height:20px;"><div class="player-location-ring"></div><div style="width:10px;height:10px;background:var(--accent);border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid #000;box-shadow:0 0 6px var(--accent);"></div></div>`,className:'',iconSize:[20,20],iconAnchor:[10,10]});state.playerMarker=L.marker([lat,lng],{icon,zIndexOffset:1000}).addTo(leafletMap).bindPopup(`<div class="popup-inner"><div class="popup-cat" style="color:var(--accent)">YOUR POSITION</div><div class="popup-title">In-Game Location</div><div class="popup-coords">X: ${parsed.x.toFixed(1)} · Y: ${parsed.y!=null?parsed.y.toFixed(1):'—'} · Z: ${parsed.z.toFixed(1)}</div></div>`).openPopup();leafletMap.flyTo([lat,lng],leafletMap.getZoom(),{duration:.8});document.getElementById('btn-clear-player').style.display='';toast('Position plotted');}
+function clearPlayerMarker(){if(state.playerMarker){state.playerMarker.remove();state.playerMarker=null;}document.getElementById('btn-clear-player').style.display='none';}
+function switchView(view){state.activeView=view;document.querySelectorAll('.nav-tab,.bot-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===view));const mv=document.getElementById('map-view-container');const ca=document.getElementById('content-area');if(view==='map'){mv.style.display='';ca.classList.remove('active');setTimeout(()=>leafletMap?.invalidateSize(),50);}else{mv.style.display='none';ca.classList.add('active');loadContentView(view);}}
+function loadContentView(view){const area=document.getElementById('content-area');area.innerHTML=`<div style="padding:40px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;">LOADING...</div>`;if(view==='market')loadMarketView(area);if(view==='quests')loadQuestsView(area);}
+function toggleSidebar(){state.sidebarOpen=!state.sidebarOpen;document.getElementById('sidebar').classList.toggle('collapsed',!state.sidebarOpen);document.getElementById('sidebar-toggle').textContent=state.sidebarOpen?'›':'‹';setTimeout(()=>leafletMap?.invalidateSize(),250);}
+function toggleMobileSidebar(){const s=document.getElementById('sidebar');s.classList.contains('mobile-open')?closeMobileSidebar():openMobileSidebar();}
+function openMobileSidebar(){document.getElementById('sidebar').classList.add('mobile-open');document.getElementById('sidebar-overlay').classList.add('open');}
+function closeMobileSidebar(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('sidebar-overlay').classList.remove('open');setTimeout(()=>leafletMap?.invalidateSize(),300);}
+function toggleSection(h){const b=h.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';}
+
+async function loadMarketView(area){try{const d=await tarkovQuery(`{items(lang:en,limit:120){name shortName avg24hPrice lastLowPrice changeLast48h category{name}iconLink}}`);const items=d.items.filter(i=>i.avg24hPrice>0).sort((a,b)=>b.avg24hPrice-a.avg24hPrice);area.innerHTML=`<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;" class="content-header"><span style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);flex-shrink:0;">FLEA MARKET</span><input style="flex:1;min-width:120px;padding:9px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;border-radius:var(--radius);min-height:42px;" placeholder="search items..." oninput="filterMarket(this.value)" /></div><div class="table-scroll"><table><thead><tr style="background:var(--panel);position:sticky;top:0;">${['','Item','Cat','24h Avg','Low','Δ48h'].map(h=>`<th style="padding:8px 10px;text-align:left;font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`).join('')}</tr></thead><tbody>${items.map(i=>{const ch=i.changeLast48h||0;const cc=ch>0?'#4a7c59':ch<0?'#8b3a3a':'var(--muted)';return`<tr class="mkt-row" style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;width:34px;">${i.iconLink?`<img src="${i.iconLink}" style="width:28px;height:28px;object-fit:contain;opacity:.8;">`:''}</td><td style="padding:6px 10px;white-space:nowrap;"><span style="font-size:13px;color:var(--text);">${i.shortName}</span><br><span style="font-size:10px;color:var(--muted);">${i.name}</span></td><td style="padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;">${i.category?.name||'—'}</td><td style="padding:6px 10px;font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;">${fmt(i.avg24hPrice)}₽</td><td style="padding:6px 10px;font-family:var(--mono);font-size:11px;color:var(--text);white-space:nowrap;">${fmt(i.lastLowPrice)}₽</td><td style="padding:6px 10px;font-family:var(--mono);font-size:11px;color:${cc};white-space:nowrap;">${ch>0?'▲':ch<0?'▼':'·'} ${Math.abs(ch).toFixed(1)}%</td></tr>`;}).join('')}</tbody></table></div>`;}catch(e){area.innerHTML=apiError('market');}}
+window.filterMarket=q=>{const ql=q.toLowerCase();document.querySelectorAll('.mkt-row').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(ql)?'':'none');};
+
+async function loadQuestsView(area){try{const d=await tarkovQuery(`{tasks(lang:en){name trader{name}minPlayerLevel experience objectives{description}}}`);const tasks=d.tasks;const traders=[...new Set(tasks.map(t=>t.trader.name))].sort();area.innerHTML=`<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;" class="content-header"><span style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);flex-shrink:0;">QUESTS</span><input id="quest-search" style="flex:1;min-width:100px;padding:9px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;border-radius:var(--radius);min-height:42px;" placeholder="search..." oninput="filterQuests(this.value)" /><select id="trader-filter" style="padding:9px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;border-radius:var(--radius);min-height:42px;" onchange="filterQuests(document.getElementById('quest-search').value)"><option value="">ALL TRADERS</option>${traders.map(t=>`<option value="${t}">${t}</option>`).join('')}</select></div><div style="flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;align-content:start;">${tasks.map(t=>`<div class="quest-card" data-trader="${t.trader.name}" style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px;"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;"><div style="font-family:var(--sans);font-weight:700;font-size:14px;color:var(--text);">${escHtml(t.name)}</div><div style="font-family:var(--mono);font-size:9px;color:var(--accent);white-space:nowrap;flex-shrink:0;">LVL ${t.minPlayerLevel}</div></div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:7px;">${t.trader.name}</div><div style="font-size:12px;color:var(--muted);">${t.objectives.slice(0,2).map(o=>`<div style="margin-bottom:2px;">· ${escHtml(o.description)}</div>`).join('')}${t.objectives.length>2?`<div style="color:var(--border2);font-size:11px;">+${t.objectives.length-2} more</div>`:''}</div><div style="font-family:var(--mono);font-size:10px;color:var(--accent2);margin-top:8px;">+${fmt(t.experience)} EXP</div></div>`).join('')}</div>`;}catch(e){area.innerHTML=apiError('quests');}}
+window.filterQuests=q=>{const trader=document.getElementById('trader-filter')?.value||'';const ql=q.toLowerCase();document.querySelectorAll('.quest-card').forEach(c=>{c.style.display=(c.textContent.toLowerCase().includes(ql)&&(!trader||c.dataset.trader===trader))?'':'none';});};
+
+async function tarkovQuery(query){const res=await fetch(TARKOV_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});const json=await res.json();if(json.errors)throw new Error(json.errors[0].message);return json.data;}
+async function fetchApiStatus(){try{await tarkovQuery(`{__typename}`);document.getElementById('nav-wipe').textContent='WIPE ACTIVE';}catch(e){document.querySelector('.status-dot').style.background='var(--danger)';document.getElementById('nav-wipe').textContent='API ERR';}}
+function apiError(l){return`<div style="padding:40px;font-family:var(--mono);font-size:11px;color:var(--danger);letter-spacing:2px;">FAILED TO LOAD ${l.toUpperCase()}</div>`;}
+let toastTimer;
+function toast(msg,isError=false){const el=document.getElementById('toast');el.textContent=msg;el.className='show'+(isError?' error':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.className='',2500);}
+function fmt(n){return n?n.toLocaleString('en-US'):'—';}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>
