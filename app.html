@@ -708,14 +708,16 @@
       <!-- Quest picker — shown only when category = quest -->
       <div class="form-group" id="m-quest-group" style="display:none;">
         <label class="form-label">Quest</label>
-        <input class="form-input" id="m-quest-search" placeholder="Search quest name or trader..." oninput="filterModalQuestList()" autocomplete="off" />
-        <div id="m-quest-list" style="max-height:11rem;overflow-y:auto;border:1px solid var(--border2);border-top:none;border-radius:0 0 var(--radius) var(--radius);background:var(--panel);"></div>
+        <div style="position:relative;">
+          <input class="form-input" id="m-quest-search" placeholder="Search quest name or trader..." oninput="filterModalQuestList()" onfocus="showModalQuestList()" autocomplete="off" />
+          <div id="m-quest-list" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:9999;max-height:14rem;overflow-y:auto;border:1px solid var(--accent);border-top:none;border-radius:0 0 var(--radius) var(--radius);background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.6);"></div>
+        </div>
         <!-- Selected quest display -->
         <div id="m-quest-selected" style="display:none;margin-top:0.4rem;padding:0.5rem 0.6rem;background:rgba(184,165,71,.08);border:1px solid var(--accent);border-radius:var(--radius);">
           <div style="font-family:var(--mono);font-size:0.55rem;color:var(--accent);letter-spacing:0.1rem;">LINKED QUEST</div>
           <div id="m-quest-selected-name" style="font-size:0.85rem;color:var(--text);margin-top:0.2rem;line-height:1.3;"></div>
           <div id="m-quest-selected-meta" style="font-family:var(--mono);font-size:0.5rem;color:var(--muted);margin-top:0.15rem;"></div>
-          <button onclick="clearModalQuestSelection()" style="margin-top:0.4rem;font-family:var(--mono);font-size:0.5rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;">✕ clear selection</button>
+          <button onclick="clearModalQuestSelection()" style="margin-top:0.4rem;font-family:var(--mono);font-size:0.5rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;">✕ change quest</button>
         </div>
       </div>
 
@@ -1194,28 +1196,45 @@ function onModalCatChange(){
   document.getElementById('m-quest-group').style.display = isQuest ? '' : 'none';
   document.getElementById('m-name-group').style.display = isQuest ? 'none' : '';
   if(isQuest){
-    renderModalQuestList('');
-    setTimeout(()=>document.getElementById('m-quest-search').focus(), 80);
+    setTimeout(()=>{
+      document.getElementById('m-quest-search').focus();
+      showModalQuestList();
+    }, 80);
   }
+}
+
+function showModalQuestList(){
+  renderModalQuestList(document.getElementById('m-quest-search').value);
+  document.getElementById('m-quest-list').style.display = 'block';
 }
 
 function renderModalQuestList(search){
   const list = document.getElementById('m-quest-list');
-  if(!questData.length){ list.innerHTML=`<div style="padding:0.5rem 0.6rem;font-family:var(--mono);font-size:0.55rem;color:var(--muted);">Loading quests...</div>`; return; }
+  if(!questData.length){
+    list.innerHTML = `<div style="padding:0.5rem 0.6rem;font-family:var(--mono);font-size:0.55rem;color:var(--muted);">Loading quests...</div>`;
+    list.style.display = 'block';
+    return;
+  }
   const q = search.toLowerCase();
   const filtered = q
     ? questData.filter(x => x.name.toLowerCase().includes(q) || x.trader.name.toLowerCase().includes(q))
-    : questData.slice(0, 60);
-  if(!filtered.length){ list.innerHTML=`<div style="padding:0.5rem 0.6rem;font-family:var(--mono);font-size:0.55rem;color:var(--muted);">No results.</div>`; return; }
+    : questData.slice(0, 80);
+  if(!filtered.length){
+    list.innerHTML = `<div style="padding:0.5rem 0.6rem;font-family:var(--mono);font-size:0.55rem;color:var(--muted);">No results.</div>`;
+    list.style.display = 'block';
+    return;
+  }
+  // Use mousedown so it fires before blur closes the list
   list.innerHTML = filtered.map(x => {
     const st = getQuestStatus(x.id);
     const stBadge = st !== 'none' ? `<span class="mql-status ${st}">${st.toUpperCase()}</span>` : '';
     const sel = _modalSelectedQuestId === x.id ? ' selected' : '';
-    return `<div class="mql-item${sel}" onclick="selectModalQuest('${x.id}')">
+    return `<div class="mql-item${sel}" onmousedown="event.preventDefault();selectModalQuest('${x.id}')" ontouchstart="selectModalQuest('${x.id}')">
       <div class="mql-item-name">${escHtml(x.name)}${stBadge}</div>
       <div class="mql-item-meta">${x.trader.name} · Level ${x.minPlayerLevel}</div>
     </div>`;
   }).join('');
+  list.style.display = 'block';
 }
 
 function filterModalQuestList(){
@@ -1226,7 +1245,7 @@ function selectModalQuest(qid){
   _modalSelectedQuestId = qid;
   const q = questData.find(x => x.id === qid);
   if(!q) return;
-  // Show selected panel, hide list
+  // Hide the dropdown and search, show the selected panel
   document.getElementById('m-quest-list').style.display = 'none';
   document.getElementById('m-quest-search').style.display = 'none';
   document.getElementById('m-quest-selected').style.display = '';
@@ -1236,11 +1255,11 @@ function selectModalQuest(qid){
 
 function clearModalQuestSelection(){
   _modalSelectedQuestId = null;
-  document.getElementById('m-quest-list').style.display = '';
+  document.getElementById('m-quest-list').style.display = 'none';
   document.getElementById('m-quest-search').style.display = '';
   document.getElementById('m-quest-search').value = '';
   document.getElementById('m-quest-selected').style.display = 'none';
-  renderModalQuestList('');
+  setTimeout(()=>document.getElementById('m-quest-search').focus(), 50);
 }
 
 function closeModal(){
@@ -1249,7 +1268,10 @@ function closeModal(){
   window._modalSaveOverride = null;
   _modalSelectedQuestId = null;
   // Reset quest picker UI
-  clearModalQuestSelection();
+  document.getElementById('m-quest-list').style.display = 'none';
+  document.getElementById('m-quest-search').style.display = '';
+  document.getElementById('m-quest-search').value = '';
+  document.getElementById('m-quest-selected').style.display = 'none';
   document.getElementById('m-quest-group').style.display = 'none';
   document.getElementById('m-name-group').style.display = '';
 }
