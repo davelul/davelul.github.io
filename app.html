@@ -1011,19 +1011,6 @@ function removeQuestPinById(){
   renderQuestMapMarkers();
   toast('Quest pin removed');
 }
-  exitQuestPinMode();
-
-  // populate coords display
-  document.getElementById('qpc-coords-display').textContent=
-    `Pin at: X=${Math.round(latlng.lng)}, Z=${Math.round(latlng.lat)} on ${MAPS.find(m=>m.id===state.activeMap)?.name||state.activeMap}`;
-
-  // prepopulate search if we have a pre-selected quest
-  document.getElementById('qpc-search').value=_qpcSelectedQid?(questData.find(q=>q.id===_qpcSelectedQid)?.name||''):'';
-  document.getElementById('qpc-notes').value=_qpcSelectedQid?(questPins[_qpcSelectedQid]?.notes||''):'';
-  renderQpcList();
-
-  document.getElementById('qpin-confirm').classList.add('open');
-}
 
 function renderQpcList(){
   const search=(document.getElementById('qpc-search')?.value||'').toLowerCase();
