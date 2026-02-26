@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#111412" />
   <title>INTELLIGENCE CENTER</title>
 
@@ -13,245 +12,548 @@
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
   <style>
+    /*
+     * SCALING STRATEGY
+     * ─────────────────
+     * html font-size = clamp(14px, 1vw, 22px)
+     * Everything uses rem so it scales linearly from 1080p → 4K.
+     * Hard-coded px values only for 1px borders and leaf-let overrides.
+     */
+    html {
+      /* Scales from ~13px on 1080p up to ~28px on 4K */
+      font-size: clamp(13px, 1.4vw, 28px);
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:#0a0c0a; --surface:#111412; --panel:#161a16; --border:#252b25; --border2:#2e362e;
-      --text:#c8d4c8; --muted:#5a6b5a; --accent:#b8a547; --accent2:#4a7c59; --danger:#8b3a3a;
-      --active:#4a7c59; --complete:#2a4a3a; --complete-text:#6aaa8a;
-      --mono:'Share Tech Mono',monospace; --sans:'Barlow Condensed',sans-serif;
-      --radius:3px; --nav-h:48px; --bot-nav-h:56px; --sidebar-w:290px; --safe-b:env(safe-area-inset-bottom,0px);
+      --bg:#0a0c0a; --surface:#111412; --panel:#161a16;
+      --border:#252b25; --border2:#2e362e;
+      --text:#c8d4c8; --muted:#5a6b5a;
+      --accent:#b8a547; --accent2:#4a7c59; --danger:#8b3a3a;
+      --active-col:#4a7c59; --complete-col:#6aaa8a;
+      --mono:'Share Tech Mono',monospace;
+      --sans:'Barlow Condensed',sans-serif;
+      --radius:0.2rem;
+      --nav-h:3rem;
+      --bot-nav-h:3.5rem;
+      --sidebar-w:18rem;
+      --safe-b:env(safe-area-inset-bottom,0px);
     }
-    html,body { height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;-webkit-tap-highlight-color:transparent; }
-    button,input,select,textarea,a,.bot-tab,.nav-tab,.map-btn,.marker-item,.btn-sm { touch-action:manipulation; }
-    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+    body {
+      height: 100dvh; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: var(--sans); font-size: 0.9rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button,input,select,textarea,a { touch-action: manipulation; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
     /* ── TOP NAV ── */
-    #nav { position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--nav-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding-top:env(safe-area-inset-top,0px);min-width:0;overflow:hidden; }
-    #nav-logo { padding:0 clamp(8px,1.5vw,16px);font-family:var(--mono);font-size:clamp(9px,1.2vw,13px);letter-spacing:clamp(2px,0.4vw,4px);color:var(--accent);border-right:1px solid var(--border);height:100%;display:flex;align-items:center;white-space:nowrap;user-select:none;flex-shrink:0; }
-    #nav-logo span{color:var(--muted);font-size:clamp(8px,0.9vw,10px);margin-left:4px;letter-spacing:2px}
-    .nav-tabs{display:flex;height:100%;flex:1;min-width:0;overflow:hidden}
-    .nav-tab{padding:0 clamp(8px,1.5vw,16px);display:flex;align-items:center;gap:6px;font-family:var(--sans);font-weight:600;font-size:clamp(10px,1vw,12px);letter-spacing:clamp(0.5px,0.15vw,1.5px);text-transform:uppercase;color:var(--muted);cursor:pointer;border-right:1px solid var(--border);transition:color .15s,background .15s;user-select:none;white-space:nowrap;flex-shrink:0}
-    .nav-tab:hover{color:var(--text);background:var(--panel)} .nav-tab.active{color:var(--accent);background:var(--panel)}
-    .nav-tab .dot{width:5px;height:5px;border-radius:50%;background:var(--muted);transition:background .15s;flex-shrink:0} .nav-tab.active .dot{background:var(--accent)}
-    #nav-right{margin-left:auto;display:flex;align-items:center;height:100%;flex-shrink:0}
-    .nav-status{padding:0 clamp(6px,1vw,12px);font-family:var(--mono);font-size:clamp(8px,0.8vw,10px);letter-spacing:1px;color:var(--muted);border-left:1px solid var(--border);height:100%;display:flex;align-items:center;gap:6px;white-space:nowrap}
-    .status-dot{width:5px;height:5px;border-radius:50%;background:var(--accent2);animation:pulse 2s infinite;flex-shrink:0}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-    #mobile-menu-btn{display:none;width:44px;height:48px;margin-left:auto;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);flex-shrink:0}
-    #mobile-menu-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--nav-h);
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding-top: env(safe-area-inset-top, 0px);
+      overflow: hidden;
+    }
+    #nav-logo {
+      padding: 0 1rem;
+      font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.25rem;
+      color: var(--accent); border-right: 1px solid var(--border);
+      height: 100%; display: flex; align-items: center;
+      white-space: nowrap; user-select: none; flex-shrink: 0;
+    }
+    #nav-logo span { color: var(--muted); font-size: 0.6rem; margin-left: 0.3rem; letter-spacing: 0.15rem; }
+    .nav-tabs { display: flex; height: 100%; }
+    .nav-tab {
+      padding: 0 0.9rem; display: flex; align-items: center; gap: 0.4rem;
+      font-family: var(--sans); font-weight: 600; font-size: 0.75rem;
+      letter-spacing: 0.1rem; text-transform: uppercase;
+      color: var(--muted); cursor: pointer;
+      border-right: 1px solid var(--border);
+      transition: color .15s, background .15s;
+      white-space: nowrap; user-select: none;
+    }
+    .nav-tab:hover { color: var(--text); background: var(--panel); }
+    .nav-tab.active { color: var(--accent); background: var(--panel); }
+    .nav-tab .dot {
+      width: 0.3rem; height: 0.3rem; border-radius: 50%;
+      background: var(--muted); transition: background .15s; flex-shrink: 0;
+    }
+    .nav-tab.active .dot { background: var(--accent); }
+    #nav-right { margin-left: auto; display: flex; align-items: center; height: 100%; }
+    .nav-status {
+      padding: 0 0.7rem; font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.05rem; color: var(--muted);
+      border-left: 1px solid var(--border);
+      height: 100%; display: flex; align-items: center; gap: 0.4rem;
+      white-space: nowrap;
+    }
+    .status-dot {
+      width: 0.3rem; height: 0.3rem; border-radius: 50%;
+      background: var(--accent2); animation: pulse 2s infinite; flex-shrink: 0;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    #mobile-menu-btn {
+      display: none; width: 2.8rem; height: var(--nav-h);
+      margin-left: auto; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer; color: var(--muted); flex-shrink: 0;
+    }
+    #mobile-menu-btn svg { width: 1.25rem; height: 1.25rem; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
 
     /* ── BOTTOM NAV ── */
-    #bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;height:calc(var(--bot-nav-h) + var(--safe-b));background:var(--surface);border-top:1px solid var(--border);padding-bottom:var(--safe-b)}
-    #bot-nav-inner{display:flex;height:var(--bot-nav-h)}
-    .bot-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--muted);transition:color .15s;border:none;background:none;font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
-    .bot-tab.active{color:var(--accent)} .bot-tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+    #bot-nav {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+      height: calc(var(--bot-nav-h) + var(--safe-b));
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding-bottom: var(--safe-b);
+    }
+    #bot-nav-inner { display: flex; height: var(--bot-nav-h); }
+    .bot-tab {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.2rem;
+      cursor: pointer; color: var(--muted); transition: color .15s;
+      border: none; background: none;
+      font-family: var(--sans); font-size: 0.55rem;
+      font-weight: 600; letter-spacing: 0.06rem; text-transform: uppercase;
+    }
+    .bot-tab.active { color: var(--accent); }
+    .bot-tab svg { width: 1.25rem; height: 1.25rem; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
     /* ── LAYOUT ── */
-    #app{position:fixed;top:var(--nav-h);left:0;right:0;bottom:0;display:flex}
-    #sidebar-overlay{display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(2px)}
-    #sidebar-overlay.open{display:block}
-    #sidebar{width:var(--sidebar-w);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;flex-shrink:0;transition:width .2s ease;z-index:200;order:2}
-    #sidebar.collapsed{width:0;overflow:hidden}
-    .sidebar-section{border-bottom:1px solid var(--border);flex-shrink:0}
-    .sidebar-section-header{padding:10px 14px;font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;min-height:40px}
-    .sidebar-section-header:hover{color:var(--text)}
-    .sidebar-section-body{}
+    #app { position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: 0; display: flex; }
+    #sidebar-overlay {
+      display: none; position: fixed; inset: 0; z-index: 900;
+      background: rgba(0,0,0,.6); backdrop-filter: blur(2px);
+    }
+    #sidebar-overlay.open { display: block; }
+    #sidebar {
+      width: var(--sidebar-w); background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      flex-shrink: 0; transition: width .2s ease; z-index: 200; order: 2;
+    }
+    #sidebar.collapsed { width: 0; overflow: hidden; }
+    .sidebar-section { border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .sidebar-section-header {
+      padding: 0.6rem 0.85rem;
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.13rem;
+      color: var(--muted); text-transform: uppercase;
+      cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+      user-select: none; min-height: 2.5rem;
+    }
+    .sidebar-section-header:hover { color: var(--text); }
 
-    /* Map list */
-    .map-btn{width:100%;padding:9px 14px;display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:var(--sans);font-weight:600;font-size:14px;letter-spacing:.5px;text-align:left;transition:color .12s,background .12s;min-height:44px}
-    .map-btn:active{background:var(--panel)} .map-btn.active{color:var(--accent);background:var(--panel)}
-    .map-btn .map-icon{width:30px;height:20px;background:var(--border2);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);flex-shrink:0}
-    .map-btn.active .map-icon{background:rgba(184,165,71,.12);color:var(--accent)}
+    /* Map buttons */
+    .map-btn {
+      width: 100%; padding: 0.55rem 0.85rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      font-family: var(--sans); font-weight: 600; font-size: 0.85rem;
+      text-align: left; transition: color .12s, background .12s; min-height: 2.7rem;
+    }
+    .map-btn:active { background: var(--panel); }
+    .map-btn.active { color: var(--accent); background: var(--panel); }
+    .map-btn .map-icon {
+      width: 1.8rem; height: 1.25rem; background: var(--border2); border-radius: 0.15rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.55rem; color: var(--muted); flex-shrink: 0;
+    }
+    .map-btn.active .map-icon { background: rgba(184,165,71,.12); color: var(--accent); }
 
     /* Layer toggles */
-    #layer-toggles{padding:8px 10px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-    .layer-toggle{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--panel);cursor:pointer;transition:all .15s;min-height:52px;justify-content:center}
-    .layer-toggle.off{opacity:.35;filter:grayscale(.8)} .layer-toggle svg{width:16px;height:16px;flex-shrink:0}
-    .layer-toggle-label{font-family:var(--mono);font-size:7px;letter-spacing:.5px;text-align:center;line-height:1.2;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .layer-toggle:not(.off) .layer-toggle-label{color:var(--text)}
-    .layer-toggle-allrow{grid-column:1/-1;display:flex;gap:5px;padding:0 0 2px}
-    .layer-toggle-allrow button{flex:1;padding:5px;background:var(--panel);border:1px solid var(--border2);color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:1px;border-radius:var(--radius);cursor:pointer;transition:all .12s;min-height:28px}
-    .layer-toggle-allrow button:hover{color:var(--accent);border-color:var(--accent)}
+    #layer-toggles { padding: 0.5rem 0.6rem; display: grid; grid-template-columns: repeat(4,1fr); gap: 0.35rem; }
+    .layer-toggle {
+      display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+      padding: 0.45rem 0.2rem; border-radius: var(--radius);
+      border: 1px solid var(--border2); background: var(--panel);
+      cursor: pointer; transition: all .15s; min-height: 3.2rem; justify-content: center;
+    }
+    .layer-toggle.off { opacity: .35; filter: grayscale(.8); }
+    .layer-toggle svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+    .layer-toggle-label {
+      font-family: var(--mono); font-size: 0.42rem; letter-spacing: 0.03rem;
+      text-align: center; line-height: 1.2; color: var(--muted);
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .layer-toggle:not(.off) .layer-toggle-label { color: var(--text); }
+    .layer-toggle-allrow { grid-column: 1/-1; display: flex; gap: 0.35rem; padding: 0 0 0.15rem; }
+    .layer-toggle-allrow button {
+      flex: 1; padding: 0.3rem; background: var(--panel);
+      border: 1px solid var(--border2); color: var(--muted);
+      font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06rem;
+      border-radius: var(--radius); cursor: pointer; transition: all .12s; min-height: 1.6rem;
+    }
+    .layer-toggle-allrow button:hover { color: var(--accent); border-color: var(--accent); }
 
     /* Marker list */
-    #marker-list{overflow-y:visible}
-    .marker-item{padding:9px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid var(--border);min-height:44px}
-    .marker-item:active{background:var(--panel)}
-    .marker-item-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
-    .marker-item-cat{font-family:var(--mono);font-size:9px;color:var(--muted)}
+    .marker-item {
+      padding: 0.55rem 0.85rem; display: flex; align-items: center; gap: 0.5rem;
+      cursor: pointer; border-bottom: 1px solid var(--border); min-height: 2.6rem;
+    }
+    .marker-item:active { background: var(--panel); }
+    .marker-item-name { font-size: 0.8rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+    .marker-item-cat { font-family: var(--mono); font-size: 0.55rem; color: var(--muted); }
 
-    /* ── QUEST TRACKER SIDEBAR ── */
-    #quest-tracker-panel{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
-    .qt-filter-row{display:flex;gap:4px;flex-wrap:wrap}
-    .qt-filter-btn{padding:4px 8px;font-family:var(--mono);font-size:8px;letter-spacing:1px;border:1px solid var(--border2);background:var(--panel);color:var(--muted);border-radius:var(--radius);cursor:pointer;transition:all .12s;white-space:nowrap}
-    .qt-filter-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(184,165,71,.08)}
-    .qt-search{width:100%;padding:7px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;border-radius:var(--radius);min-height:34px}
-    .qt-search:focus{outline:none;border-color:var(--accent)}
-    .qt-search::placeholder{color:var(--muted)}
-    .qt-trader-select{width:100%;padding:6px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;border-radius:var(--radius);appearance:none;cursor:pointer;min-height:30px}
-    .qt-trader-select:focus{outline:none;border-color:var(--accent)}
+    /* Quest tracker */
+    #quest-tracker-panel { padding: 0.5rem 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .qt-filter-row { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+    .qt-filter-btn {
+      padding: 0.25rem 0.5rem; font-family: var(--mono); font-size: 0.5rem;
+      letter-spacing: 0.06rem; border: 1px solid var(--border2); background: var(--panel);
+      color: var(--muted); border-radius: var(--radius); cursor: pointer; transition: all .12s;
+    }
+    .qt-filter-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(184,165,71,.08); }
+    .qt-search {
+      width: 100%; padding: 0.4rem 0.6rem; background: var(--panel);
+      border: 1px solid var(--border2); color: var(--text);
+      font-family: var(--mono); font-size: 0.65rem;
+      border-radius: var(--radius); min-height: 2rem;
+    }
+    .qt-search:focus { outline: none; border-color: var(--accent); }
+    .qt-search::placeholder { color: var(--muted); }
+    .qt-trader-select {
+      width: 100%; padding: 0.35rem 0.6rem; background: var(--panel);
+      border: 1px solid var(--border2); color: var(--text);
+      font-family: var(--mono); font-size: 0.6rem;
+      border-radius: var(--radius); appearance: none; cursor: pointer; min-height: 1.8rem;
+    }
+    .qt-trader-select:focus { outline: none; border-color: var(--accent); }
+    .qt-item {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.4rem; border-radius: var(--radius);
+      cursor: pointer; transition: background .12s;
+      border: 1px solid transparent; margin-bottom: 0.2rem;
+    }
+    .qt-item:hover { background: var(--panel); }
+    .qt-item.status-active { border-color: rgba(74,124,89,.4); background: rgba(74,124,89,.06); }
+    .qt-item.status-complete { opacity: .5; }
+    .qt-status-btn {
+      width: 1.1rem; height: 1.1rem; border-radius: 50%;
+      border: 1.5px solid var(--muted); background: none; cursor: pointer;
+      flex-shrink: 0; transition: all .12s;
+      display: flex; align-items: center; justify-content: center; padding: 0;
+    }
+    .qt-status-btn.active { border-color: var(--active-col); background: var(--active-col); }
+    .qt-status-btn.complete { border-color: var(--complete-col); background: var(--complete-col); }
+    .qt-status-btn svg { width: 0.6rem; height: 0.6rem; stroke: #000; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; display: none; }
+    .qt-status-btn.active svg, .qt-status-btn.complete svg { display: block; }
+    .qt-item-info { flex: 1; min-width: 0; }
+    .qt-item-name { font-size: 0.72rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+    .qt-item.status-complete .qt-item-name { text-decoration: line-through; color: var(--muted); }
+    .qt-item-meta { font-family: var(--mono); font-size: 0.5rem; color: var(--muted); margin-top: 0.1rem; }
+    .qt-pin-btn {
+      width: 1.5rem; height: 1.5rem; background: none; border: none;
+      cursor: pointer; color: var(--muted); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .12s; border-radius: 2px;
+    }
+    .qt-pin-btn:hover { color: var(--accent); }
+    .qt-pin-btn.has-pin { color: var(--accent); }
+    .qt-pin-btn svg { width: 0.75rem; height: 0.75rem; stroke: currentColor; fill: none; stroke-width: 1.8; }
 
-    /* Quest list items */
-    .qt-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius);cursor:pointer;transition:background .12s;border:1px solid transparent;margin-bottom:3px}
-    .qt-item:hover{background:var(--panel)}
-    .qt-item.status-active{border-color:rgba(74,124,89,.4);background:rgba(74,124,89,.06)}
-    .qt-item.status-complete{opacity:.5}
-    .qt-status-btn{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--muted);background:none;cursor:pointer;flex-shrink:0;transition:all .12s;display:flex;align-items:center;justify-content:center;padding:0}
-    .qt-status-btn.active{border-color:var(--active);background:var(--active)}
-    .qt-status-btn.complete{border-color:var(--complete-text);background:var(--complete-text)}
-    .qt-status-btn svg{width:10px;height:10px;stroke:#000;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;display:none}
-    .qt-status-btn.active svg,.qt-status-btn.complete svg{display:block}
-    .qt-item-info{flex:1;min-width:0}
-    .qt-item-name{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
-    .qt-item.status-complete .qt-item-name{text-decoration:line-through;color:var(--muted)}
-    .qt-item-meta{font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:1px}
-    .qt-pin-btn{width:24px;height:24px;background:none;border:none;cursor:pointer;color:var(--muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:color .12s;border-radius:2px}
-    .qt-pin-btn:hover{color:var(--accent)}
-    .qt-pin-btn.has-pin{color:var(--accent)}
-    .qt-pin-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.8}
+    /* Quest map markers */
+    .quest-map-marker {
+      width: 1.75rem; height: 1.75rem; border-radius: 50%;
+      background: rgba(232,200,74,.15); border: 2px solid #e8c84a;
+      display: flex; align-items: center; justify-content: center;
+      color: #e8c84a; box-shadow: 0 2px 8px rgba(0,0,0,.7);
+      cursor: pointer; font-family: var(--mono); font-size: 0.55rem; font-weight: bold;
+    }
+    .quest-map-marker.active { background: rgba(74,124,89,.25); border-color: #4a9e6b; color: #4a9e6b; box-shadow: 0 2px 12px rgba(74,158,107,.4); }
+    .quest-map-marker.complete { opacity: .4; }
 
-    /* Map quest markers */
-    .quest-map-marker{width:28px;height:28px;border-radius:50%;background:rgba(232,200,74,.15);border:2px solid #e8c84a;display:flex;align-items:center;justify-content:center;color:#e8c84a;box-shadow:0 2px 8px rgba(0,0,0,.7);cursor:pointer;transition:transform .1s;font-family:var(--mono);font-size:9px;font-weight:bold}
-    .quest-map-marker.active{background:rgba(74,124,89,.25);border-color:#4a9e6b;color:#4a9e6b;box-shadow:0 2px 12px rgba(74,158,107,.4)}
-    .quest-map-marker.complete{opacity:.4}
+    /* Buttons */
+    .btn-sm {
+      padding: 0.4rem 0.6rem; background: var(--panel);
+      border: 1px solid var(--border2); color: var(--text);
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06rem;
+      border-radius: var(--radius); cursor: pointer; transition: all .12s; min-height: 2rem;
+    }
+    .btn-sm:active { opacity: .7; }
+    .btn-sm.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+    .btn-sm.danger { border-color: var(--danger); color: #e06060; }
 
-    .btn-sm{padding:7px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;letter-spacing:1px;border-radius:var(--radius);cursor:pointer;transition:all .12s;min-height:34px}
-    .btn-sm:active{opacity:.7} .btn-sm.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
-    .btn-sm.danger{border-color:var(--danger);color:#e06060}
+    /* ── MAIN / MAP ── */
+    #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; min-width: 0; }
+    #map-view-container { flex: 1; position: relative; background: #0d0f0d; display: flex; flex-direction: column; }
+    #map { width: 100%; height: 100%; touch-action: none; }
+    .leaflet-container { background: #0d0f0d !important; }
+    .leaflet-control-zoom { border: 1px solid var(--border2) !important; box-shadow: none !important; }
+    .leaflet-control-zoom a {
+      background: var(--surface) !important; color: var(--text) !important;
+      border-color: var(--border2) !important;
+      font-size: 1.1rem !important;
+      width: 2.2rem !important; height: 2.2rem !important; line-height: 2.2rem !important;
+    }
+    .leaflet-control-zoom a:hover { background: var(--panel) !important; color: var(--accent) !important; }
+    .leaflet-control-attribution { display: none !important; }
 
-    /* ── MAIN ── */
-    #main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-width:0}
-    #map-view-container{flex:1;position:relative;background:#0d0f0d;display:flex;flex-direction:column}
-    #map{width:100%;height:100%;touch-action:none}
-    .leaflet-container{background:#0d0f0d!important} .leaflet-control-zoom{border:1px solid var(--border2)!important;box-shadow:none!important}
-    .leaflet-control-zoom a{background:var(--surface)!important;color:var(--text)!important;border-color:var(--border2)!important;font-size:18px!important;width:36px!important;height:36px!important;line-height:36px!important}
-    .leaflet-control-zoom a:hover{background:var(--panel)!important;color:var(--accent)!important} .leaflet-control-attribution{display:none!important}
-    #coords-display{position:absolute;top:10px;right:10px;z-index:500;background:rgba(17,20,18,.85);border:1px solid var(--border2);padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);border-radius:var(--radius);backdrop-filter:blur(4px);pointer-events:none}
-    #edit-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(184,165,71,.12);border:1px solid var(--accent);padding:6px 14px;font-family:var(--mono);font-size:10px;color:var(--accent);border-radius:var(--radius);letter-spacing:1px;display:none;pointer-events:none;white-space:nowrap}
-    #edit-hint.show{display:block}
-    .lp-ripple{position:absolute;border-radius:50%;width:60px;height:60px;margin:-30px;border:2px solid var(--accent);opacity:0;animation:lp-anim .6s ease-out forwards;pointer-events:none;z-index:600}
-    @keyframes lp-anim{from{transform:scale(.2);opacity:.8}to{transform:scale(1.2);opacity:0}}
-    #map-toolbar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:4px;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:4px}
-    .tool-btn{padding:7px 10px;background:none;border:1px solid transparent;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;border-radius:2px;transition:all .12s;white-space:nowrap;min-height:34px}
-    .tool-btn:active{opacity:.7} .tool-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(184,165,71,.08)}
-    #map-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d0f0d;z-index:10;pointer-events:none}
-    #map-placeholder.hidden{display:none}
-    .placeholder-label{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
-    .placeholder-grid{width:120px;height:80px;opacity:.08;background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:20px 20px}
-    #sidebar-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:600;background:var(--surface);border:1px solid var(--border2);border-right:none;width:14px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:color .12s;border-radius:3px 0 0 3px}
-    #sidebar-toggle:hover{color:var(--accent)}
-    .map-marker-icon{width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--mc) 18%,transparent);border:2px solid var(--mc);display:flex;align-items:center;justify-content:center;color:var(--mc);box-shadow:0 2px 8px rgba(0,0,0,.7),0 0 0 1px rgba(0,0,0,.4);cursor:pointer;transition:transform .1s}
-    .map-marker-icon:active{transform:scale(.9)} .map-marker-icon svg{width:14px;height:14px;pointer-events:none}
-    .player-location-ring{width:16px;height:16px;border:2px solid var(--accent);border-radius:50%;animation:ring 1.5s ease-out infinite;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-    @keyframes ring{from{transform:translate(-50%,-50%) scale(.5);opacity:1}to{transform:translate(-50%,-50%) scale(2.5);opacity:0}}
-    .leaflet-popup-content-wrapper{background:var(--surface)!important;border:1px solid var(--border2)!important;border-radius:var(--radius)!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important;color:var(--text)!important;padding:0!important;min-width:220px}
-    .leaflet-popup-tip-container{display:none!important} .leaflet-popup-close-button{color:var(--muted)!important;font-size:20px!important;top:8px!important;right:10px!important;width:32px!important;height:32px!important}
-    .leaflet-popup-close-button:hover{color:var(--accent)!important}
-    .popup-inner{padding:14px 16px} .popup-cat{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
-    .popup-title{font-family:var(--sans);font-weight:700;font-size:17px;color:var(--text);margin-bottom:6px}
-    .popup-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px}
-    .popup-img{width:100%;border-radius:2px;margin-bottom:10px;border:1px solid var(--border2)}
-    .popup-coords{font-family:var(--mono);font-size:9px;color:var(--border2);border-top:1px solid var(--border);padding-top:8px;margin-top:4px}
-    .popup-actions{display:flex;gap:6px;margin-top:10px} .popup-actions .btn-sm{min-height:38px}
+    #coords-display {
+      position: absolute; top: 0.6rem; right: 0.6rem; z-index: 500;
+      background: rgba(17,20,18,.85); border: 1px solid var(--border2);
+      padding: 0.3rem 0.6rem; font-family: var(--mono); font-size: 0.6rem;
+      color: var(--muted); border-radius: var(--radius);
+      backdrop-filter: blur(4px); pointer-events: none;
+    }
+    #edit-hint {
+      position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%);
+      z-index: 500; background: rgba(184,165,71,.12); border: 1px solid var(--accent);
+      padding: 0.35rem 0.85rem; font-family: var(--mono); font-size: 0.6rem;
+      color: var(--accent); border-radius: var(--radius); letter-spacing: 0.06rem;
+      display: none; pointer-events: none; white-space: nowrap;
+    }
+    #edit-hint.show { display: block; }
 
-    /* ── MODAL ── */
-    #modal-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
-    #modal-overlay.open{display:flex}
-    #modal{background:var(--surface);border:1px solid var(--border2);width:100%;max-width:480px;border-radius:12px 12px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.8);animation:modal-up .2s ease;max-height:92dvh;display:flex;flex-direction:column;padding-bottom:var(--safe-b)}
-    @keyframes modal-up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
-    .modal-drag-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:10px auto 2px;flex-shrink:0}
-    .modal-header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-    .modal-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--accent)}
-    .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
-    .modal-close:hover{color:var(--text)}
-    .modal-body{padding:14px 16px;display:flex;flex-direction:column;gap:11px;overflow-y:auto;flex:1}
-    .form-group{display:flex;flex-direction:column;gap:5px}
-    .form-label{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
-    .form-input,.form-select,.form-textarea{padding:10px 12px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--sans);font-size:15px;border-radius:var(--radius);min-height:44px}
-    .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent)}
-    .form-select{appearance:none;cursor:pointer} .form-textarea{resize:vertical;min-height:80px}
-    .form-input::placeholder,.form-textarea::placeholder{color:var(--muted)}
-    .modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
-    .modal-footer .btn-sm{min-height:44px;padding:0 18px;font-size:11px}
-    #img-drop{border:1px dashed var(--border2);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--muted);min-height:48px;display:flex;align-items:center;justify-content:center;transition:all .12s}
-    #img-drop.drag-over{border-color:var(--accent);background:rgba(184,165,71,.04);color:var(--text)}
-    #img-preview{display:none;width:100%;border-radius:2px;margin-top:6px;max-height:140px;object-fit:cover}
+    /* Quest-pin placement mode banner */
+    #quest-pin-hint {
+      position: absolute; top: 0.6rem; left: 50%; transform: translateX(-50%);
+      z-index: 501; background: rgba(74,158,107,.15); border: 1px solid var(--active-col);
+      padding: 0.35rem 0.85rem; font-family: var(--mono); font-size: 0.6rem;
+      color: #4a9e6b; border-radius: var(--radius); letter-spacing: 0.06rem;
+      display: none; pointer-events: none; white-space: nowrap;
+    }
+    #quest-pin-hint.show { display: block; }
 
-    /* Quest pin modal */
-    #quest-pin-modal{display:none;position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.75);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
-    #quest-pin-modal.open{display:flex}
-    #quest-pin-inner{background:var(--surface);border:1px solid var(--border2);width:100%;max-width:480px;border-radius:12px 12px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.8);animation:modal-up .2s ease;padding-bottom:var(--safe-b)}
-    .qpm-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-    .qpm-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--accent)}
-    .qpm-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-    .qpm-body .form-label{margin-bottom:2px}
-    .qpm-row{display:flex;gap:8px;align-items:flex-end}
-    .qpm-hint{font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.6}
-    .qpm-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px}
+    .lp-ripple {
+      position: absolute; border-radius: 50%; width: 3.75rem; height: 3.75rem; margin: -1.875rem;
+      border: 2px solid var(--accent); opacity: 0;
+      animation: lp-anim .6s ease-out forwards; pointer-events: none; z-index: 600;
+    }
+    @keyframes lp-anim { from{transform:scale(.2);opacity:.8} to{transform:scale(1.2);opacity:0} }
 
-    /* ── CONTENT AREA (market/quests full page) ── */
-    #content-area{display:none;flex-direction:column;flex:1;overflow:hidden}
-    #content-area.active{display:flex}
+    #map-toolbar {
+      position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+      z-index: 500; display: flex; gap: 0.25rem;
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 0.25rem; padding: 0.25rem;
+    }
+    .tool-btn {
+      padding: 0.4rem 0.65rem; background: none; border: 1px solid transparent;
+      color: var(--muted); font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.06rem; cursor: pointer; border-radius: 0.15rem;
+      transition: all .12s; white-space: nowrap; min-height: 2rem;
+    }
+    .tool-btn:active { opacity: .7; }
+    .tool-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(184,165,71,.08); }
 
-    /* ── MARKET — fluid responsive table ── */
-    .mkt-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0}
-    .mkt-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
-    .mkt-header-label{font-family:var(--mono);font-size:clamp(9px,1vw,11px);letter-spacing:2px;color:var(--muted);white-space:nowrap;flex-shrink:0}
-    .mkt-search{flex:1;min-width:100px;padding:8px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:clamp(10px,1.1vw,12px);border-radius:var(--radius);min-height:38px}
-    .mkt-search:focus{outline:none;border-color:var(--accent)}
-    .mkt-search::placeholder{color:var(--muted)}
-    .mkt-scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
-    .mkt-table{width:100%;border-collapse:collapse;min-width:0}
-    .mkt-table th{padding:clamp(5px,0.8vw,9px) clamp(6px,1vw,12px);text-align:left;font-family:var(--mono);font-size:clamp(8px,0.8vw,10px);letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);white-space:nowrap;z-index:2}
-    .mkt-table td{padding:clamp(4px,0.6vw,7px) clamp(6px,1vw,12px);border-bottom:1px solid var(--border);vertical-align:middle}
-    .mkt-table tr:hover td{background:var(--panel)}
-    .mkt-icon{width:clamp(22px,2.5vw,30px);height:clamp(22px,2.5vw,30px);object-fit:contain;opacity:.85;display:block}
-    .mkt-name-primary{font-size:clamp(11px,1.1vw,14px);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:clamp(120px,18vw,280px);display:block}
-    .mkt-name-secondary{font-size:clamp(9px,0.85vw,11px);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:clamp(120px,18vw,280px);display:block;margin-top:1px}
-    .mkt-cat{font-family:var(--mono);font-size:clamp(8px,0.8vw,10px);color:var(--muted);white-space:nowrap}
-    .mkt-price{font-family:var(--mono);font-size:clamp(10px,1vw,12px);color:var(--accent);white-space:nowrap}
-    .mkt-price-low{font-family:var(--mono);font-size:clamp(10px,1vw,12px);color:var(--text);white-space:nowrap}
-    .mkt-change{font-family:var(--mono);font-size:clamp(9px,0.9vw,11px);white-space:nowrap}
-    /* Hide less important columns on small screens */
-    @media(max-width:700px){.mkt-col-low,.mkt-col-cat{display:none}}
-    @media(max-width:480px){.mkt-col-change{display:none}}
+    #map-placeholder {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.75rem;
+      background: #0d0f0d; z-index: 10; pointer-events: none;
+    }
+    #map-placeholder.hidden { display: none; }
+    .placeholder-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18rem; color: var(--muted); text-transform: uppercase; }
+    .placeholder-grid { width: 7.5rem; height: 5rem; opacity: .08; background-image: linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px); background-size: 1.25rem 1.25rem; }
 
-    /* ── QUESTS PAGE ── */
-    .quests-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0}
-    .quests-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
-    .quests-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;align-content:start}
-    .quest-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px;position:relative;transition:border-color .15s}
-    .quest-card.status-active{border-color:rgba(74,124,89,.5)}
-    .quest-card.status-complete{opacity:.55}
-    .quest-card-header{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
-    .quest-card-name{font-family:var(--sans);font-weight:700;font-size:clamp(12px,1.1vw,14px);color:var(--text);line-height:1.3}
-    .quest-card-lvl{font-family:var(--mono);font-size:9px;color:var(--accent);white-space:nowrap;flex-shrink:0}
-    .quest-card-trader{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px}
-    .quest-card-objectives{font-size:clamp(11px,1vw,12px);color:var(--muted)}
-    .quest-card-objectives div{margin-bottom:2px}
-    .quest-card-exp{font-family:var(--mono);font-size:10px;color:var(--accent2);margin-top:8px}
-    .quest-card-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
-    .quest-card-actions .btn-sm{font-size:9px;padding:4px 8px;min-height:28px;letter-spacing:.5px}
-    .quest-status-badge{font-family:var(--mono);font-size:8px;letter-spacing:1px;padding:2px 6px;border-radius:2px;position:absolute;top:10px;right:10px}
-    .quest-status-badge.active{background:rgba(74,124,89,.2);color:#4a9e6b;border:1px solid rgba(74,124,89,.4)}
-    .quest-status-badge.complete{background:rgba(42,74,58,.2);color:#6aaa8a;border:1px solid rgba(106,170,138,.3)}
+    #sidebar-toggle {
+      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      z-index: 600; background: var(--surface); border: 1px solid var(--border2);
+      border-right: none; width: 0.85rem; height: 2.75rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); transition: color .12s; border-radius: 0.2rem 0 0 0.2rem;
+    }
+    #sidebar-toggle:hover { color: var(--accent); }
 
-    /* ── TOAST ── */
-    #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);z-index:3000;background:var(--surface);border:1px solid var(--border2);padding:8px 18px;border-radius:var(--radius);font-family:var(--mono);font-size:11px;color:var(--text);opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap}
-    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)} #toast.error{border-color:var(--danger);color:#e06060}
-    .edit-mode-active #map{cursor:crosshair!important}
+    .map-marker-icon {
+      width: 2rem; height: 2rem; border-radius: 50%;
+      background: color-mix(in srgb, var(--mc) 18%, transparent);
+      border: 2px solid var(--mc);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--mc); box-shadow: 0 2px 8px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.4);
+      cursor: pointer; transition: transform .1s;
+    }
+    .map-marker-icon:active { transform: scale(.9); }
+    .map-marker-icon svg { width: 0.875rem; height: 0.875rem; pointer-events: none; }
+    .player-location-ring {
+      width: 1rem; height: 1rem; border: 2px solid var(--accent);
+      border-radius: 50%; animation: ring 1.5s ease-out infinite;
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    }
+    @keyframes ring { from{transform:translate(-50%,-50%) scale(.5);opacity:1} to{transform:translate(-50%,-50%) scale(2.5);opacity:0} }
+
+    /* Popups */
+    .leaflet-popup-content-wrapper {
+      background: var(--surface) !important; border: 1px solid var(--border2) !important;
+      border-radius: var(--radius) !important; box-shadow: 0 8px 32px rgba(0,0,0,.7) !important;
+      color: var(--text) !important; padding: 0 !important; min-width: 13rem;
+    }
+    .leaflet-popup-tip-container { display: none !important; }
+    .leaflet-popup-close-button { color: var(--muted) !important; font-size: 1.25rem !important; top: 0.5rem !important; right: 0.625rem !important; width: 2rem !important; height: 2rem !important; }
+    .leaflet-popup-close-button:hover { color: var(--accent) !important; }
+    .popup-inner { padding: 0.875rem 1rem; }
+    .popup-cat { font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.13rem; color: var(--muted); text-transform: uppercase; margin-bottom: 0.25rem; }
+    .popup-title { font-family: var(--sans); font-weight: 700; font-size: 1.05rem; color: var(--text); margin-bottom: 0.35rem; }
+    .popup-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.6; margin-bottom: 0.6rem; }
+    .popup-img { width: 100%; border-radius: 0.15rem; margin-bottom: 0.6rem; border: 1px solid var(--border2); }
+    .popup-coords { font-family: var(--mono); font-size: 0.55rem; color: var(--border2); border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.25rem; }
+    .popup-actions { display: flex; gap: 0.35rem; margin-top: 0.6rem; flex-wrap: wrap; }
+
+    /* ── MODALS ── */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,.7); backdrop-filter: blur(2px);
+      align-items: flex-end; justify-content: center;
+    }
+    #modal-overlay.open { display: flex; }
+    #modal {
+      background: var(--surface); border: 1px solid var(--border2);
+      width: 100%; max-width: 30rem;
+      border-radius: 0.75rem 0.75rem 0 0;
+      box-shadow: 0 -8px 40px rgba(0,0,0,.8);
+      animation: modal-up .2s ease;
+      max-height: 92dvh; display: flex; flex-direction: column;
+      padding-bottom: var(--safe-b);
+    }
+    @keyframes modal-up { from{transform:translateY(1.875rem);opacity:0} to{transform:none;opacity:1} }
+    .modal-drag-handle { width: 2.25rem; height: 0.25rem; background: var(--border2); border-radius: 0.125rem; margin: 0.6rem auto 0.125rem; flex-shrink: 0; }
+    .modal-header { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .modal-title { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.13rem; color: var(--accent); }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 1.375rem; cursor: pointer; width: 2.25rem; height: 2.25rem; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 0.875rem 1rem; display: flex; flex-direction: column; gap: 0.7rem; overflow-y: auto; flex: 1; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .form-label { font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.09rem; color: var(--muted); text-transform: uppercase; }
+    .form-input, .form-select, .form-textarea {
+      padding: 0.6rem 0.75rem; background: var(--panel); border: 1px solid var(--border2);
+      color: var(--text); font-family: var(--sans); font-size: 0.9rem;
+      border-radius: var(--radius); min-height: 2.75rem;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+    .form-select { appearance: none; cursor: pointer; }
+    .form-textarea { resize: vertical; min-height: 5rem; }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--muted); }
+    .modal-footer { padding: 0.75rem 1rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
+    .modal-footer .btn-sm { min-height: 2.75rem; padding: 0 1.125rem; font-size: 0.65rem; }
+    #img-drop {
+      border: 1px dashed var(--border2); border-radius: var(--radius);
+      padding: 0.875rem; text-align: center; cursor: pointer;
+      font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+      min-height: 3rem; display: flex; align-items: center; justify-content: center; transition: all .12s;
+    }
+    #img-drop.drag-over { border-color: var(--accent); background: rgba(184,165,71,.04); color: var(--text); }
+    #img-preview { display: none; width: 100%; border-radius: 0.15rem; margin-top: 0.35rem; max-height: 8.75rem; object-fit: cover; }
+
+    /* Quest-pin-on-map: small confirmation sheet */
+    #qpin-confirm {
+      display: none; position: fixed; inset: 0; z-index: 2100;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(2px);
+      align-items: flex-end; justify-content: center;
+    }
+    #qpin-confirm.open { display: flex; }
+    #qpin-confirm-inner {
+      background: var(--surface); border: 1px solid var(--border2);
+      width: 100%; max-width: 30rem; border-radius: 0.75rem 0.75rem 0 0;
+      box-shadow: 0 -8px 40px rgba(0,0,0,.8); animation: modal-up .2s ease;
+      padding-bottom: var(--safe-b);
+    }
+    .qpc-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .qpc-title { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.13rem; color: var(--active-col); }
+    .qpc-body { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .qpc-search { width: 100%; padding: 0.5rem 0.6rem; background: var(--panel); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 0.65rem; border-radius: var(--radius); }
+    .qpc-search:focus { outline: none; border-color: var(--accent); }
+    .qpc-search::placeholder { color: var(--muted); }
+    .qpc-list { max-height: 12rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.2rem; }
+    .qpc-item { padding: 0.5rem 0.6rem; border-radius: var(--radius); cursor: pointer; transition: background .1s; border: 1px solid transparent; }
+    .qpc-item:hover { background: var(--panel); border-color: var(--border2); }
+    .qpc-item.selected { border-color: var(--accent); background: rgba(184,165,71,.06); }
+    .qpc-item-name { font-size: 0.78rem; color: var(--text); line-height: 1.3; }
+    .qpc-item-meta { font-family: var(--mono); font-size: 0.5rem; color: var(--muted); }
+    .qpc-notes { width: 100%; padding: 0.5rem 0.6rem; background: var(--panel); border: 1px solid var(--border2); color: var(--text); font-family: var(--sans); font-size: 0.8rem; border-radius: var(--radius); min-height: 3.5rem; resize: vertical; }
+    .qpc-notes:focus { outline: none; border-color: var(--accent); }
+    .qpc-notes::placeholder { color: var(--muted); }
+    .qpc-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* ── CONTENT VIEWS ── */
+    #content-area { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    #content-area.active { display: flex; }
+
+    /* Market */
+    .mkt-wrap { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .mkt-header { padding: 0.6rem 0.875rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; flex-wrap: wrap; }
+    .mkt-header-label { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.13rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .mkt-search { flex: 1; min-width: 6rem; padding: 0.5rem 0.6rem; background: var(--panel); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 0.7rem; border-radius: var(--radius); min-height: 2.25rem; }
+    .mkt-search:focus { outline: none; border-color: var(--accent); }
+    .mkt-search::placeholder { color: var(--muted); }
+    .mkt-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+    .mkt-table { width: 100%; border-collapse: collapse; }
+    .mkt-table th { padding: 0.5rem 0.75rem; text-align: left; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06rem; color: var(--muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); white-space: nowrap; z-index: 2; }
+    .mkt-table td { padding: 0.35rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .mkt-table tr:hover td { background: var(--panel); }
+    .mkt-icon { width: 1.75rem; height: 1.75rem; object-fit: contain; opacity: .85; display: block; }
+    .mkt-name-primary { font-size: 0.82rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 16rem; display: block; }
+    .mkt-name-secondary { font-size: 0.65rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 16rem; display: block; margin-top: 0.1rem; }
+    .mkt-cat { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); }
+    .mkt-price { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); white-space: nowrap; }
+    .mkt-price-low { font-family: var(--mono); font-size: 0.7rem; color: var(--text); white-space: nowrap; }
+    .mkt-change { font-family: var(--mono); font-size: 0.65rem; white-space: nowrap; }
+    @media(max-width:700px){ .mkt-col-low,.mkt-col-cat{display:none} }
+    @media(max-width:480px){ .mkt-col-change{display:none} }
+
+    /* Quests page */
+    .quests-wrap { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .quests-header { padding: 0.6rem 0.875rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
+    .quests-grid { flex: 1; overflow-y: auto; padding: 0.6rem; display: grid; grid-template-columns: repeat(auto-fill,minmax(15rem,1fr)); gap: 0.5rem; align-content: start; }
+    .quest-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem; position: relative; transition: border-color .15s; }
+    .quest-card.status-active { border-color: rgba(74,124,89,.5); }
+    .quest-card.status-complete { opacity: .55; }
+    .quest-card-header { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem; }
+    .quest-card-name { font-family: var(--sans); font-weight: 700; font-size: 0.85rem; color: var(--text); line-height: 1.3; }
+    .quest-card-lvl { font-family: var(--mono); font-size: 0.55rem; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+    .quest-card-trader { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .quest-card-objectives { font-size: 0.72rem; color: var(--muted); }
+    .quest-card-objectives div { margin-bottom: 0.125rem; }
+    .quest-card-exp { font-family: var(--mono); font-size: 0.6rem; color: var(--accent2); margin-top: 0.5rem; }
+    .quest-card-actions { display: flex; gap: 0.3rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    .quest-card-actions .btn-sm { font-size: 0.55rem; padding: 0.25rem 0.5rem; min-height: 1.75rem; }
+    .quest-status-badge { font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.06rem; padding: 0.125rem 0.375rem; border-radius: 0.15rem; position: absolute; top: 0.6rem; right: 0.6rem; }
+    .quest-status-badge.active { background: rgba(74,124,89,.2); color: #4a9e6b; border: 1px solid rgba(74,124,89,.4); }
+    .quest-status-badge.complete { background: rgba(42,74,58,.2); color: #6aaa8a; border: 1px solid rgba(106,170,138,.3); }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.25rem; left: 50%;
+      transform: translateX(-50%) translateY(0.625rem);
+      z-index: 3000; background: var(--surface); border: 1px solid var(--border2);
+      padding: 0.5rem 1.125rem; border-radius: var(--radius);
+      font-family: var(--mono); font-size: 0.65rem; color: var(--text);
+      opacity: 0; transition: all .2s; pointer-events: none; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { border-color: var(--danger); color: #e06060; }
+    .edit-mode-active #map { cursor: crosshair !important; }
+    .quest-pin-mode #map { cursor: crosshair !important; }
 
     /* ── MOBILE ── */
-    @media(max-width:640px){
-      #bot-nav{display:block} .nav-tabs{display:none} .nav-status{display:none}
-      #nav-logo{border-right:none;padding-right:8px} #mobile-menu-btn{display:flex} #nav-right{display:none}
-      #sidebar{position:fixed;top:0;bottom:0;right:0;left:auto;width:var(--sidebar-w)!important;transform:translateX(110%);transition:transform .25s ease;z-index:950;padding-top:var(--nav-h);padding-bottom:calc(var(--safe-b) + 8px);overflow-y:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-left:1px solid var(--border);border-right:none}
-      #sidebar.mobile-open{transform:translateX(0)} #sidebar.collapsed{width:var(--sidebar-w)!important;overflow-y:auto!important}
-      #sidebar-toggle{display:none} #app{bottom:calc(var(--bot-nav-h) + var(--safe-b))}
-      #coords-display{display:none} #map-toolbar{bottom:10px} .tool-btn{padding:6px 8px;font-size:9px}
-      .leaflet-control-zoom a{width:40px!important;height:40px!important;line-height:40px!important;font-size:20px!important}
-      #toast{bottom:calc(var(--bot-nav-h) + var(--safe-b) + 12px)}
-      .mkt-header{flex-wrap:wrap}
+    @media(max-width:640px) {
+      html { font-size: 14px; }
+      #bot-nav { display: block; }
+      .nav-tabs { display: none; }
+      .nav-status { display: none; }
+      #nav-logo { border-right: none; padding-right: 0.5rem; }
+      #mobile-menu-btn { display: flex; }
+      #nav-right { display: none; }
+      #sidebar {
+        position: fixed; top: 0; bottom: 0; right: 0; left: auto;
+        width: var(--sidebar-w) !important;
+        transform: translateX(110%);
+        transition: transform .25s ease; z-index: 950;
+        padding-top: var(--nav-h);
+        padding-bottom: calc(var(--safe-b) + 0.5rem);
+        overflow-y: auto !important; -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        border-left: 1px solid var(--border); border-right: none;
+      }
+      #sidebar.mobile-open { transform: translateX(0); }
+      #sidebar.collapsed { width: var(--sidebar-w) !important; overflow-y: auto !important; }
+      #sidebar-toggle { display: none; }
+      #app { bottom: calc(var(--bot-nav-h) + var(--safe-b)); }
+      #coords-display { display: none; }
+      #map-toolbar { bottom: 0.6rem; }
+      #toast { bottom: calc(var(--bot-nav-h) + var(--safe-b) + 0.75rem); }
     }
   </style>
 </head>
@@ -277,22 +579,20 @@
 <div id="app">
   <div id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
-  <!-- SIDEBAR -->
   <div id="sidebar">
     <div class="sidebar-section">
-      <div class="sidebar-section-header" onclick="toggleSection(this)">MAPS <span style="font-size:8px">▼</span></div>
+      <div class="sidebar-section-header" onclick="toggleSection(this)">MAPS <span style="font-size:0.5rem">▼</span></div>
       <div class="sidebar-section-body" id="map-list"></div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-section-header" onclick="toggleSection(this)">LAYERS <span style="font-size:8px">▼</span></div>
+      <div class="sidebar-section-header" onclick="toggleSection(this)">LAYERS <span style="font-size:0.5rem">▼</span></div>
       <div class="sidebar-section-body" id="layer-toggles"></div>
     </div>
-    <!-- QUEST MAP TRACKER -->
     <div class="sidebar-section">
       <div class="sidebar-section-header" onclick="toggleSection(this)">
         QUEST TRACKER
-        <span id="qt-active-count" style="font-family:var(--mono);font-size:8px;color:var(--accent2);margin-left:auto;margin-right:6px;"></span>
-        <span style="font-size:8px">▼</span>
+        <span id="qt-active-count" style="font-family:var(--mono);font-size:0.5rem;color:var(--accent2);margin-left:auto;margin-right:0.4rem;"></span>
+        <span style="font-size:0.5rem">▼</span>
       </div>
       <div class="sidebar-section-body" id="quest-tracker-panel">
         <div class="qt-filter-row">
@@ -305,26 +605,29 @@
           <option value="">ALL TRADERS</option>
         </select>
         <input class="qt-search" id="qt-search" placeholder="Search quests..." oninput="renderQuestTracker()" />
-        <div id="qt-list" style="max-height:320px;overflow-y:auto;margin:0 -4px;padding:0 4px"></div>
-        <div style="font-family:var(--mono);font-size:8px;color:var(--border2);line-height:1.6;margin-top:4px;">
-          ○ = not started &nbsp;●<span style="color:var(--active)">●</span> = active &nbsp;<span style="color:var(--complete-text)">✓</span> = done<br>
-          Click 📍 to set/go to map pin
+        <div id="qt-list" style="max-height:20rem;overflow-y:auto;margin:0 -0.25rem;padding:0 0.25rem"></div>
+        <div style="font-family:var(--mono);font-size:0.5rem;color:var(--border2);line-height:1.7;margin-top:0.25rem;">
+          Click ● to cycle status &nbsp;·&nbsp; Click 📍 to set/go to map pin<br>
+          Click the map in ADD QUEST PIN mode to drop a pin
         </div>
       </div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-section-header" onclick="toggleSection(this)">MARKERS <span id="marker-count" style="font-family:var(--mono);font-size:8px;">0</span></div>
+      <div class="sidebar-section-header" onclick="toggleSection(this)">MARKERS <span id="marker-count" style="font-family:var(--mono);font-size:0.5rem;">0</span></div>
       <div class="sidebar-section-body" id="marker-list"></div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-section-header" onclick="toggleSection(this)">LOCATE ME <span style="font-size:8px">▼</span></div>
-      <div class="sidebar-section-body" style="padding:10px 12px;">
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px;line-height:1.6;">Paste F1 coords or screenshot filename:<br><span style="color:var(--border2);">e.g. 235.0, 5.2, -104.3</span></div>
+      <div class="sidebar-section-header" onclick="toggleSection(this)">LOCATE ME <span style="font-size:0.5rem">▼</span></div>
+      <div class="sidebar-section-body" style="padding:0.6rem 0.75rem;">
+        <div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);margin-bottom:0.35rem;line-height:1.6;">
+          Paste F1 coords or screenshot filename:<br>
+          <span style="color:var(--border2);">e.g. 235.0, 5.2, -104.3</span>
+        </div>
         <input type="text" id="loc-paste" placeholder="X, Y, Z"
-          style="width:100%;padding:9px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;border-radius:var(--radius);min-height:40px;letter-spacing:.5px;"
+          style="width:100%;padding:0.55rem 0.6rem;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:0.7rem;border-radius:var(--radius);min-height:2.4rem;"
           oninput="onCoordInput(this)" onkeydown="if(event.key==='Enter')locatePlayer()" />
-        <div id="coord-parse-preview" style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-top:5px;min-height:14px;"></div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
+        <div id="coord-parse-preview" style="font-family:var(--mono);font-size:0.55rem;color:var(--accent);margin-top:0.3rem;min-height:0.875rem;"></div>
+        <div style="display:flex;gap:0.35rem;margin-top:0.5rem;">
           <button class="btn-sm primary" onclick="locatePlayer();closeMobileSidebar();" style="flex:1;">LOCATE</button>
           <button class="btn-sm" onclick="clearPlayerMarker()">CLR</button>
         </div>
@@ -332,15 +635,16 @@
     </div>
   </div>
 
-  <!-- MAIN -->
   <div id="main">
     <div id="map-view-container">
       <div id="map-placeholder"><div class="placeholder-grid"></div><div class="placeholder-label">SELECT A MAP</div></div>
       <div id="map"></div>
       <div id="coords-display">──</div>
-      <div id="edit-hint">LONG-PRESS MAP TO ADD MARKER</div>
+      <div id="edit-hint">LONG-PRESS / RIGHT-CLICK TO ADD MARKER</div>
+      <div id="quest-pin-hint">CLICK MAP TO DROP QUEST PIN — ESC TO CANCEL</div>
       <div id="map-toolbar">
         <button class="tool-btn" id="btn-edit" onclick="toggleEditMode()">✛ ADD</button>
+        <button class="tool-btn" id="btn-quest-pin" onclick="toggleQuestPinMode()">📍 QUEST PIN</button>
         <button class="tool-btn" id="btn-fit" onclick="fitMap()">⊡ FIT</button>
         <button class="tool-btn" id="btn-clear-player" onclick="clearPlayerMarker()" style="display:none">⊠ POS</button>
       </div>
@@ -404,37 +708,25 @@
   </div>
 </div>
 
-<!-- QUEST PIN MODAL -->
-<div id="quest-pin-modal">
-  <div id="quest-pin-inner">
+<!-- QUEST PIN CONFIRMATION (after clicking map) -->
+<div id="qpin-confirm">
+  <div id="qpin-confirm-inner">
     <div class="modal-drag-handle"></div>
-    <div class="qpm-header">
-      <span class="qpm-title" id="qpm-title">SET QUEST PIN</span>
-      <button class="modal-close" onclick="closeQuestPinModal()">×</button>
+    <div class="qpc-header">
+      <span class="qpc-title">ASSIGN QUEST PIN</span>
+      <button class="modal-close" onclick="cancelQuestPin()">×</button>
     </div>
-    <div class="qpm-body">
-      <div class="qpm-hint" id="qpm-hint"></div>
-      <div class="form-group">
-        <label class="form-label">Map</label>
-        <select class="form-select" id="qpm-map" style="background:var(--panel);border:1px solid var(--border2);color:var(--text);"></select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Coordinates (X, Z)</label>
-        <div class="qpm-row">
-          <input class="form-input" id="qpm-x" placeholder="X" style="flex:1" />
-          <input class="form-input" id="qpm-z" placeholder="Z" style="flex:1" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notes (optional)</label>
-        <textarea class="form-textarea" id="qpm-notes" placeholder="e.g. 3rd floor, room 221..." style="min-height:60px"></textarea>
-      </div>
+    <div class="qpc-body">
+      <div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);" id="qpc-coords-display">Pin at: ──</div>
+      <input class="qpc-search" id="qpc-search" placeholder="Search quest to assign..." oninput="renderQpcList()" />
+      <div class="qpc-list" id="qpc-list"></div>
+      <textarea class="qpc-notes" id="qpc-notes" placeholder="Notes: floor, room, objective details..."></textarea>
     </div>
-    <div class="qpm-footer">
-      <button class="btn-sm danger" id="qpm-remove-btn" onclick="removeQuestPin()" style="display:none">REMOVE PIN</button>
-      <div style="display:flex;gap:8px;margin-left:auto">
-        <button class="btn-sm" onclick="closeQuestPinModal()">CANCEL</button>
-        <button class="btn-sm primary" onclick="saveQuestPin()">SAVE PIN</button>
+    <div class="qpc-footer">
+      <button class="btn-sm danger" id="qpc-remove-btn" onclick="removeQuestPinById()" style="display:none">REMOVE PIN</button>
+      <div style="display:flex;gap:0.5rem;margin-left:auto">
+        <button class="btn-sm" onclick="cancelQuestPin()">CANCEL</button>
+        <button class="btn-sm primary" onclick="confirmQuestPin()">SAVE PIN</button>
       </div>
     </div>
   </div>
@@ -467,7 +759,6 @@ const CATEGORY_CONFIG={
 };
 const categoryVisible=Object.fromEntries(Object.keys(CATEGORY_CONFIG).map(k=>[k,true]));
 
-// ── MAP DATA ─────────────────────────────────────────────────────────────────
 const MAPS=[
   {id:'customs',name:'Customs',short:'CUS',img:'./customs.png',bounds:{minX:-371,maxX:698,minZ:-307,maxZ:237}},
   {id:'woods',name:'Woods',short:'WDS',img:'./woods.png',bounds:{minX:-695,maxX:650,minZ:-945,maxZ:470}},
@@ -486,18 +777,18 @@ const MAPS=[
 const isMobile=()=>window.matchMedia('(max-width:640px)').matches;
 
 // ── STATE ────────────────────────────────────────────────────────────────────
-let state={activeMap:null,activeView:'map',editMode:false,pendingLatLng:null,pendingImgDataUrl:null,playerMarker:null,sidebarOpen:true};
+let state={activeMap:null,activeView:'map',editMode:false,questPinMode:false,pendingLatLng:null,pendingImgDataUrl:null,playerMarker:null,sidebarOpen:true};
 let leafletMap=null,markersLayer=null,questMarkersLayer=null,imageOverlay=null;
 let lpTimer=null,lpStartPos=null,lpActivePointerId=null;
+// pending quest pin from map click
+let _pendingQuestPinLatLng=null;
+let _qpcSelectedQid=null;
 
-// ── QUEST TRACKER STATE ──────────────────────────────────────────────────────
-// questStatuses: { [questId]: 'none' | 'active' | 'complete' }
-// questPins: { [questId]: { mapId, x, z, notes } }
-let questData=[];          // loaded from API
-let questStatuses={};      // saved to localStorage
-let questPins={};          // saved to localStorage  
-let questFilter='all';     // 'all' | 'active' | 'available' | 'complete'
-let _questPinEditId=null;  // which quest we're editing pin for
+// ── QUEST STATE ──────────────────────────────────────────────────────────────
+let questData=[];
+let questStatuses={};
+let questPins={};
+let questFilter='all';
 
 function loadQuestState(){
   try{questStatuses=JSON.parse(localStorage.getItem('ic_quest_statuses'))||{};}catch(e){questStatuses={};}
@@ -507,10 +798,10 @@ function saveQuestState(){
   localStorage.setItem('ic_quest_statuses',JSON.stringify(questStatuses));
   localStorage.setItem('ic_quest_pins',JSON.stringify(questPins));
 }
-
 function getQuestStatus(id){return questStatuses[id]||'none';}
 function setQuestStatus(id,status){
-  if(status==='none'){delete questStatuses[id];}else{questStatuses[id]=status;}
+  if(status==='none')delete questStatuses[id];
+  else questStatuses[id]=status;
   saveQuestState();
   renderQuestTracker();
   renderQuestMapMarkers();
@@ -518,62 +809,53 @@ function setQuestStatus(id,status){
 }
 function cycleQuestStatus(id){
   const cur=getQuestStatus(id);
-  const next=cur==='none'?'active':cur==='active'?'complete':'none';
-  setQuestStatus(id,next);
+  setQuestStatus(id,cur==='none'?'active':cur==='active'?'complete':'none');
 }
-
 function updateActiveQuestCount(){
   const n=Object.values(questStatuses).filter(v=>v==='active').length;
   const el=document.getElementById('qt-active-count');
   if(el)el.textContent=n>0?`${n} active`:'';
 }
 
-// ── QUEST TRACKER RENDER ─────────────────────────────────────────────────────
+// ── QUEST TRACKER SIDEBAR ────────────────────────────────────────────────────
 function setQuestFilter(f){
   questFilter=f;
   document.querySelectorAll('.qt-filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.qtf===f));
   renderQuestTracker();
 }
-
 function renderQuestTracker(){
   const list=document.getElementById('qt-list');
-  if(!questData.length){list.innerHTML=`<div style="font-family:var(--mono);font-size:9px;color:var(--muted);padding:8px 4px;">Loading quests...</div>`;return;}
-
+  if(!questData.length){list.innerHTML=`<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);padding:0.5rem 0.25rem;">Loading quests...</div>`;return;}
   const search=(document.getElementById('qt-search')?.value||'').toLowerCase();
   const trader=document.getElementById('qt-trader-select')?.value||'';
-
   const filtered=questData.filter(q=>{
-    const status=getQuestStatus(q.id);
-    if(questFilter==='active'&&status!=='active')return false;
-    if(questFilter==='complete'&&status!=='complete')return false;
-    if(questFilter==='available'&&status!=='none')return false;
+    const st=getQuestStatus(q.id);
+    if(questFilter==='active'&&st!=='active')return false;
+    if(questFilter==='complete'&&st!=='complete')return false;
+    if(questFilter==='available'&&st!=='none')return false;
     if(trader&&q.trader.name!==trader)return false;
     if(search&&!q.name.toLowerCase().includes(search)&&!q.trader.name.toLowerCase().includes(search))return false;
     return true;
   });
-
-  if(!filtered.length){list.innerHTML=`<div style="font-family:var(--mono);font-size:9px;color:var(--muted);padding:8px 4px;">No quests match filter.</div>`;return;}
-
+  if(!filtered.length){list.innerHTML=`<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);padding:0.5rem 0.25rem;">No quests match filter.</div>`;return;}
   list.innerHTML=filtered.map(q=>{
-    const status=getQuestStatus(q.id);
+    const st=getQuestStatus(q.id);
     const pin=questPins[q.id];
-    const hasPin=!!pin;
-    const statusIcon=status==='active'?'<path d="M5 12l5 5L20 7"/>':status==='complete'?'<path d="M5 12l5 5L20 7"/>':'';
-    return `<div class="qt-item status-${status}" data-qid="${q.id}">
-      <button class="qt-status-btn ${status}" onclick="cycleQuestStatus('${q.id}')" title="Cycle status">
-        <svg viewBox="0 0 24 24">${statusIcon}</svg>
+    const chk='<path d="M5 12l5 5L20 7"/>';
+    return`<div class="qt-item status-${st}" data-qid="${q.id}">
+      <button class="qt-status-btn ${st}" onclick="cycleQuestStatus('${q.id}')" title="Cycle: none→active→complete">
+        <svg viewBox="0 0 24 24">${st!=='none'?chk:''}</svg>
       </button>
       <div class="qt-item-info" onclick="goToQuestPin('${q.id}')">
         <div class="qt-item-name">${escHtml(q.name)}</div>
-        <div class="qt-item-meta">${q.trader.name} · LVL ${q.minPlayerLevel}${hasPin?' · 📍 '+MAPS.find(m=>m.id===pin.mapId)?.name:''}${status==='active'?' · <span style="color:var(--active)">ACTIVE</span>':status==='complete'?' · <span style="color:var(--complete-text)">DONE</span>':''}</div>
+        <div class="qt-item-meta">${q.trader.name} · LVL ${q.minPlayerLevel}${pin?' · 📍 '+( MAPS.find(m=>m.id===pin.mapId)?.name||'?'):''}${st==='active'?' · <span style="color:#4a9e6b">ACTIVE</span>':st==='complete'?' · <span style="color:#6aaa8a">DONE</span>':''}</div>
       </div>
-      <button class="qt-pin-btn ${hasPin?'has-pin':''}" onclick="openQuestPinModal('${q.id}')" title="${hasPin?'Edit pin':'Set map pin'}">
+      <button class="qt-pin-btn ${pin?'has-pin':''}" onclick="openQuestPinModal('${q.id}')" title="${pin?'Edit pin':'Set map pin'}">
         <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="currentColor" opacity=".6"/></svg>
       </button>
     </div>`;
   }).join('');
 }
-
 function populateQuestTraderFilter(){
   const traders=[...new Set(questData.map(q=>q.trader.name))].sort();
   const sel=document.getElementById('qt-trader-select');
@@ -587,113 +869,178 @@ function populateQuestTraderFilter(){
 function renderQuestMapMarkers(){
   if(!questMarkersLayer)return;
   questMarkersLayer.clearLayers();
-
+  if(!categoryVisible['quest'])return;
   Object.entries(questPins).forEach(([qid,pin])=>{
     if(!pin||pin.mapId!==state.activeMap)return;
-    const quest=questData.find(q=>q.id===qid);
-    if(!quest)return;
-    const status=getQuestStatus(qid);
-
-    // respect layer visibility — if 'quest' category is hidden, skip
-    if(!categoryVisible['quest'])return;
-
+    const quest=questData.find(q=>q.id===qid);if(!quest)return;
+    const st=getQuestStatus(qid);
     const icon=L.divIcon({
-      html:`<div class="quest-map-marker ${status}" title="${escHtml(quest.name)}">${status==='active'?'★':'?'}</div>`,
+      html:`<div class="quest-map-marker ${st}" title="${escHtml(quest.name)}">${st==='active'?'★':'?'}</div>`,
       className:'',iconSize:[28,28],iconAnchor:[14,14]
     });
-    L.marker([pin.z,pin.x],{icon,zIndexOffset:500})
-      .addTo(questMarkersLayer)
-      .on('click',()=>showQuestPopup(quest,pin));
+    L.marker([pin.z,pin.x],{icon,zIndexOffset:500}).addTo(questMarkersLayer).on('click',()=>showQuestPopup(quest,pin));
   });
 }
-
 function showQuestPopup(quest,pin){
-  const status=getQuestStatus(quest.id);
-  L.popup({maxWidth:280,closeButton:true})
-    .setLatLng([pin.z,pin.x])
-    .setContent(`<div class="popup-inner">
-      <div class="popup-cat" style="color:#e8c84a">QUEST</div>
-      <div class="popup-title">${escHtml(quest.name)}</div>
-      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px;">${quest.trader.name} · LVL ${quest.minPlayerLevel}</div>
-      ${pin.notes?`<div class="popup-desc" style="margin-bottom:6px;">${escHtml(pin.notes)}</div>`:''}
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
-        <button class="btn-sm" style="font-size:9px;padding:4px 8px;min-height:28px;" onclick="setQuestStatus('${quest.id}','${status==='active'?'none':'active'}')">${status==='active'?'DEACTIVATE':'SET ACTIVE'}</button>
-        <button class="btn-sm" style="font-size:9px;padding:4px 8px;min-height:28px;color:var(--complete-text);border-color:var(--complete-text);" onclick="setQuestStatus('${quest.id}','${status==='complete'?'none':'complete'}')">${status==='complete'?'UNMARK':'COMPLETE'}</button>
-        <button class="btn-sm" style="font-size:9px;padding:4px 8px;min-height:28px;" onclick="openQuestPinModal('${quest.id}')">EDIT PIN</button>
-      </div>
-    </div>`)
-    .openOn(leafletMap);
+  const st=getQuestStatus(quest.id);
+  L.popup({maxWidth:280,closeButton:true}).setLatLng([pin.z,pin.x]).setContent(`<div class="popup-inner">
+    <div class="popup-cat" style="color:#e8c84a">QUEST</div>
+    <div class="popup-title">${escHtml(quest.name)}</div>
+    <div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);margin-bottom:0.35rem;">${quest.trader.name} · LVL ${quest.minPlayerLevel}</div>
+    ${pin.notes?`<div class="popup-desc" style="margin-bottom:0.35rem;">${escHtml(pin.notes)}</div>`:''}
+    <div class="popup-actions">
+      <button class="btn-sm" onclick="setQuestStatus('${quest.id}','${st==='active'?'none':'active'}')">${st==='active'?'DEACTIVATE':'SET ACTIVE'}</button>
+      <button class="btn-sm" style="${st==='complete'?'color:var(--complete-col);border-color:var(--complete-col)':''}" onclick="setQuestStatus('${quest.id}','${st==='complete'?'none':'complete'}')">${st==='complete'?'UNMARK':'COMPLETE'}</button>
+      <button class="btn-sm" onclick="openQuestPinModal('${quest.id}')">EDIT PIN</button>
+    </div>
+  </div>`).openOn(leafletMap);
 }
-
 function goToQuestPin(qid){
+  const pin=questPins[qid];if(!pin){toast('No map pin — click 📍 to add one');return;}
+  switchView('map');closeMobileSidebar();
+  if(pin.mapId!==state.activeMap){selectMap(pin.mapId);setTimeout(()=>leafletMap.flyTo([pin.z,pin.x],1,{duration:.7}),400);}
+  else{leafletMap.flyTo([pin.z,pin.x],1,{duration:.6});}
+}
+
+// ── QUEST PIN MODAL (📍 button handler) ──────────────────────────────────────
+// If quest already has a pin → open the edit/confirm sheet directly (no map click needed)
+// If no pin yet → switch to map view and enter click-to-place mode
+function openQuestPinModal(qid){
   const pin=questPins[qid];
-  if(!pin){toast('No map pin set — click 📍 to add one',false);return;}
-  if(pin.mapId!==state.activeMap){
-    // Switch to the right map first
-    switchView('map');
-    selectMap(pin.mapId);
-    closeMobileSidebar();
-    setTimeout(()=>{leafletMap.flyTo([pin.z,pin.x],1,{duration:.7});},400);
-  }else{
+  if(pin){
+    // Already has a pin — open the sheet directly with the existing location
+    _pendingQuestPinLatLng={lat:pin.z,lng:pin.x};
+    _qpcSelectedQid=qid;
+    // Navigate to the right map so user can see it
     switchView('map');
     closeMobileSidebar();
-    leafletMap.flyTo([pin.z,pin.x],1,{duration:.6});
+    if(pin.mapId!==state.activeMap)selectMap(pin.mapId);
+    // Show the confirm/edit sheet
+    document.getElementById('qpc-coords-display').textContent=
+      `Pin at: X=${pin.x}, Z=${pin.z} on ${MAPS.find(m=>m.id===pin.mapId)?.name||pin.mapId} — click map to move`;
+    document.getElementById('qpc-search').value=questData.find(q=>q.id===qid)?.name||'';
+    document.getElementById('qpc-notes').value=pin.notes||'';
+    document.getElementById('qpc-remove-btn').style.display='';
+    renderQpcList();
+    document.getElementById('qpin-confirm').classList.add('open');
+  } else {
+    // No pin — go to map, enter click-to-place mode with this quest pre-selected
+    switchView('map');
+    closeMobileSidebar();
+    toast('Click the map to place the quest pin');
+    enterQuestPinMode(qid);
   }
 }
 
-// ── QUEST PIN MODAL ──────────────────────────────────────────────────────────
-function openQuestPinModal(qid){
-  _questPinEditId=qid;
-  const quest=questData.find(q=>q.id===qid);
-  const pin=questPins[qid];
-  document.getElementById('qpm-title').textContent=`PIN: ${quest?quest.name.toUpperCase().slice(0,30):'QUEST'}`;
-  document.getElementById('qpm-hint').textContent=quest?`${quest.trader.name} · Level ${quest.minPlayerLevel}`:'';
-  // Populate map select
-  const mapSel=document.getElementById('qpm-map');
-  mapSel.innerHTML=MAPS.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
-  if(pin){
-    mapSel.value=pin.mapId;
-    document.getElementById('qpm-x').value=pin.x;
-    document.getElementById('qpm-z').value=pin.z;
-    document.getElementById('qpm-notes').value=pin.notes||'';
-    document.getElementById('qpm-remove-btn').style.display='';
-  }else{
-    mapSel.value=state.activeMap||MAPS[0].id;
-    document.getElementById('qpm-x').value='';
-    document.getElementById('qpm-z').value='';
-    document.getElementById('qpm-notes').value='';
-    document.getElementById('qpm-remove-btn').style.display='none';
-  }
-  document.getElementById('quest-pin-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('qpm-x').focus(),120);
+// ── QUEST PIN MODE (click-on-map) ────────────────────────────────────────────
+function toggleQuestPinMode(){
+  if(state.questPinMode)exitQuestPinMode();
+  else enterQuestPinMode(null);
 }
-function closeQuestPinModal(){document.getElementById('quest-pin-modal').classList.remove('open');_questPinEditId=null;}
-function saveQuestPin(){
-  if(!_questPinEditId)return;
-  const mapId=document.getElementById('qpm-map').value;
-  const x=parseFloat(document.getElementById('qpm-x').value);
-  const z=parseFloat(document.getElementById('qpm-z').value);
-  if(isNaN(x)||isNaN(z)){toast('Enter valid X and Z coordinates',true);return;}
-  questPins[_questPinEditId]={mapId,x,z,notes:document.getElementById('qpm-notes').value.trim()};
-  saveQuestState();
-  closeQuestPinModal();
-  renderQuestTracker();
-  renderQuestMapMarkers();
-  toast('Quest pin saved');
-  // If on that map, fly to it
-  if(mapId===state.activeMap){leafletMap.flyTo([z,x],1,{duration:.6});}
+function enterQuestPinMode(preSelectedQid){
+  // exit regular edit mode if on
+  if(state.editMode)toggleEditMode();
+  state.questPinMode=true;
+  document.getElementById('btn-quest-pin').classList.add('active');
+  document.getElementById('quest-pin-hint').classList.add('show');
+  document.getElementById('map-view-container').classList.add('quest-pin-mode');
+  _preSelectedQuestPinQid=preSelectedQid||null;
 }
-function removeQuestPin(){
-  if(!_questPinEditId)return;
-  delete questPins[_questPinEditId];
+function exitQuestPinMode(){
+  state.questPinMode=false;
+  document.getElementById('btn-quest-pin').classList.remove('active');
+  document.getElementById('quest-pin-hint').classList.remove('show');
+  document.getElementById('map-view-container').classList.remove('quest-pin-mode');
+  _preSelectedQuestPinQid=null;
+}
+let _preSelectedQuestPinQid=null;
+
+function handleQuestPinClick(latlng){
+  _pendingQuestPinLatLng=latlng;
+  _qpcSelectedQid=_preSelectedQuestPinQid;
+  exitQuestPinMode();
+
+  document.getElementById('qpc-coords-display').textContent=
+    `Pin at: X=${Math.round(latlng.lng)}, Z=${Math.round(latlng.lat)} on ${MAPS.find(m=>m.id===state.activeMap)?.name||state.activeMap}`;
+  document.getElementById('qpc-search').value=_qpcSelectedQid?(questData.find(q=>q.id===_qpcSelectedQid)?.name||''):'';
+  document.getElementById('qpc-notes').value=_qpcSelectedQid?(questPins[_qpcSelectedQid]?.notes||''):'';
+  // only show remove if this quest already had a pin
+  document.getElementById('qpc-remove-btn').style.display=(_qpcSelectedQid&&questPins[_qpcSelectedQid])?'':'none';
+  renderQpcList();
+  document.getElementById('qpin-confirm').classList.add('open');
+}
+
+function removeQuestPinById(){
+  if(!_qpcSelectedQid)return;
+  delete questPins[_qpcSelectedQid];
   saveQuestState();
-  closeQuestPinModal();
+  cancelQuestPin();
   renderQuestTracker();
   renderQuestMapMarkers();
   toast('Quest pin removed');
 }
+  exitQuestPinMode();
 
-// ── UTILS / STORAGE ──────────────────────────────────────────────────────────
+  // populate coords display
+  document.getElementById('qpc-coords-display').textContent=
+    `Pin at: X=${Math.round(latlng.lng)}, Z=${Math.round(latlng.lat)} on ${MAPS.find(m=>m.id===state.activeMap)?.name||state.activeMap}`;
+
+  // prepopulate search if we have a pre-selected quest
+  document.getElementById('qpc-search').value=_qpcSelectedQid?(questData.find(q=>q.id===_qpcSelectedQid)?.name||''):'';
+  document.getElementById('qpc-notes').value=_qpcSelectedQid?(questPins[_qpcSelectedQid]?.notes||''):'';
+  renderQpcList();
+
+  document.getElementById('qpin-confirm').classList.add('open');
+}
+
+function renderQpcList(){
+  const search=(document.getElementById('qpc-search')?.value||'').toLowerCase();
+  const filtered=search
+    ?questData.filter(q=>q.name.toLowerCase().includes(search)||q.trader.name.toLowerCase().includes(search))
+    :questData.slice(0,40);
+  document.getElementById('qpc-list').innerHTML=filtered.map(q=>{
+    const pin=questPins[q.id];
+    const st=getQuestStatus(q.id);
+    return`<div class="qpc-item ${_qpcSelectedQid===q.id?'selected':''}" onclick="selectQpcQuest('${q.id}')">
+      <div class="qpc-item-name">${escHtml(q.name)}${st==='active'?' <span style="color:#4a9e6b;font-size:0.5rem;">ACTIVE</span>':''}</div>
+      <div class="qpc-item-meta">${q.trader.name} · LVL ${q.minPlayerLevel}${pin?' · already pinned on '+( MAPS.find(m=>m.id===pin.mapId)?.name||'?'):''}</div>
+    </div>`;
+  }).join('');
+}
+function selectQpcQuest(qid){
+  _qpcSelectedQid=qid;
+  // pre-fill notes from existing pin
+  const pin=questPins[qid];
+  if(pin)document.getElementById('qpc-notes').value=pin.notes||'';
+  renderQpcList();
+}
+function cancelQuestPin(){
+  _pendingQuestPinLatLng=null;_qpcSelectedQid=null;
+  document.getElementById('qpin-confirm').classList.remove('open');
+  document.getElementById('qpc-remove-btn').style.display='none';
+}
+function confirmQuestPin(){
+  if(!_qpcSelectedQid){toast('Select a quest first',true);return;}
+  const existingPin=questPins[_qpcSelectedQid];
+  if(!_pendingQuestPinLatLng&&!existingPin){toast('No position — click map first',true);return;}
+  const latlng=_pendingQuestPinLatLng||{lat:existingPin.z,lng:existingPin.x};
+  // If editing an existing pin without moving it, preserve its mapId; otherwise use active map
+  const mapId=_pendingQuestPinLatLng?state.activeMap:(existingPin?.mapId||state.activeMap);
+  questPins[_qpcSelectedQid]={
+    mapId,
+    x:Math.round(latlng.lng*10)/10,
+    z:Math.round(latlng.lat*10)/10,
+    notes:document.getElementById('qpc-notes').value.trim()
+  };
+  saveQuestState();
+  cancelQuestPin();
+  renderQuestTracker();
+  renderQuestMapMarkers();
+  if(mapId===state.activeMap)leafletMap.flyTo([latlng.lat,latlng.lng],1,{duration:.6});
+  toast('Quest pin saved');
+}
+
+// ── STORAGE / UTILS ──────────────────────────────────────────────────────────
 function fitMap(){if(imageOverlay)leafletMap.fitBounds(imageOverlay.getBounds(),{padding:[10,10]});}
 function storageKey(id){return`ic_markers_${id}`;}
 function loadMarkers(id){try{return JSON.parse(localStorage.getItem(storageKey(id)))||[];}catch(e){return[];}}
@@ -702,36 +1049,62 @@ function saveMarkersStore(id,m){localStorage.setItem(storageKey(id),JSON.stringi
 // ── INIT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   loadQuestState();
-
   document.getElementById('map-list').innerHTML=MAPS.map(m=>
-    `<button class="map-btn" data-mapid="${m.id}" onclick="selectMap('${m.id}');closeMobileSidebar();">
-       <div class="map-icon">${m.short}</div>${m.name}
-     </button>`
+    `<button class="map-btn" data-mapid="${m.id}" onclick="selectMap('${m.id}');closeMobileSidebar();"><div class="map-icon">${m.short}</div>${m.name}</button>`
   ).join('');
 
   leafletMap=L.map('map',{crs:L.CRS.Simple,minZoom:-3,maxZoom:7,zoomSnap:0.25,zoomDelta:0.5,preferCanvas:true,attributionControl:false,touchZoom:true,bounceAtZoomLimits:false});
   markersLayer=L.layerGroup().addTo(leafletMap);
   questMarkersLayer=L.layerGroup().addTo(leafletMap);
 
-  leafletMap.on('mousemove',e=>{if(e.originalEvent&&e.originalEvent.pointerType!=='touch')document.getElementById('coords-display').textContent=`${Math.round(e.latlng.lng)}, ${Math.round(e.latlng.lat)}`;});
-  leafletMap.on('contextmenu',e=>{if(!state.editMode||isMobile())return;e.originalEvent.preventDefault();state.pendingLatLng=e.latlng;openModal();});
+  leafletMap.on('mousemove',e=>{
+    if(e.originalEvent&&e.originalEvent.pointerType!=='touch')
+      document.getElementById('coords-display').textContent=`${Math.round(e.latlng.lng)}, ${Math.round(e.latlng.lat)}`;
+  });
+
+  leafletMap.on('click',e=>{
+    if(state.questPinMode){handleQuestPinClick(e.latlng);return;}
+  });
+
+  leafletMap.on('contextmenu',e=>{
+    if(!state.editMode||isMobile())return;
+    e.originalEvent.preventDefault();
+    state.pendingLatLng=e.latlng;openModal();
+  });
+
+  // ESC cancels quest pin mode
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(state.questPinMode)exitQuestPinMode();
+      if(document.getElementById('qpin-confirm').classList.contains('open'))cancelQuestPin();
+    }
+  });
+
   initLongPress();
   document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
-  document.getElementById('quest-pin-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeQuestPinModal();});
+  document.getElementById('qpin-confirm').addEventListener('click',e=>{if(e.target===e.currentTarget)cancelQuestPin();});
 
   fetchApiStatus();
   buildLayerToggles();
   fetchQuestData();
 
   const urlView=new URLSearchParams(window.location.search).get('view');
-  if(urlView==='market'){switchView('market');}
-  else if(urlView==='quests'){switchView('quests');}
+  if(urlView==='market')switchView('market');
+  else if(urlView==='quests')switchView('quests');
   else{switchView('map');selectMap('customs');}
 });
 
 // ── LONG PRESS ───────────────────────────────────────────────────────────────
 function initLongPress(){const el=leafletMap.getContainer();el.addEventListener('pointerdown',onLP_Down,{passive:true});el.addEventListener('pointerup',onLP_Up,{passive:true});el.addEventListener('pointercancel',onLP_Cancel,{passive:true});el.addEventListener('pointermove',onLP_Move,{passive:true});}
-function onLP_Down(e){if(!state.editMode)return;if(lpActivePointerId!==null){onLP_Cancel();return;}if(e.pointerType==='mouse')return;lpActivePointerId=e.pointerId;lpStartPos={x:e.clientX,y:e.clientY};lpTimer=setTimeout(()=>{lpTimer=null;if(!state.activeMap||!leafletMap.getCenter)return;try{const rect=leafletMap.getContainer().getBoundingClientRect();const cp=L.point(lpStartPos.x-rect.left,lpStartPos.y-rect.top);state.pendingLatLng=leafletMap.containerPointToLatLng(cp);showRipple(lpStartPos.x,lpStartPos.y);openModal();}catch(e){}},550);}
+function onLP_Down(e){
+  // In quest-pin mode, a single tap/click fires the leaflet 'click' event which we already handle
+  if(state.questPinMode)return;
+  if(!state.editMode)return;
+  if(lpActivePointerId!==null){onLP_Cancel();return;}
+  if(e.pointerType==='mouse')return;
+  lpActivePointerId=e.pointerId;lpStartPos={x:e.clientX,y:e.clientY};
+  lpTimer=setTimeout(()=>{lpTimer=null;if(!state.activeMap)return;try{const rect=leafletMap.getContainer().getBoundingClientRect();const cp=L.point(lpStartPos.x-rect.left,lpStartPos.y-rect.top);state.pendingLatLng=leafletMap.containerPointToLatLng(cp);showRipple(lpStartPos.x,lpStartPos.y);openModal();}catch(e){}},550);
+}
 function onLP_Up(e){if(e.pointerId!==lpActivePointerId)return;onLP_Cancel();}
 function onLP_Cancel(){if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}lpActivePointerId=null;lpStartPos=null;}
 function onLP_Move(e){if(e.pointerId!==lpActivePointerId||!lpTimer||!lpStartPos)return;const dx=e.clientX-lpStartPos.x,dy=e.clientY-lpStartPos.y;if(dx*dx+dy*dy>100)onLP_Cancel();}
@@ -746,22 +1119,21 @@ function selectMap(id){
   if(imageOverlay){imageOverlay.remove();imageOverlay=null;}
   const sw=document.getElementById('floor-switcher');if(sw)sw.remove();
   const mapData=MAPS.find(m=>m.id===id);if(!mapData)return;
-  const{bounds}=mapData;state.mapBounds=bounds;
+  const{bounds}=mapData;
   const lb=[[bounds.minZ,bounds.minX],[bounds.maxZ,bounds.maxX]];
   showMapLoading(true);
-  imageOverlay=L.imageOverlay(mapData.img,lb,{opacity:1,interactive:false,crossOrigin:false}).addTo(leafletMap);
+  imageOverlay=L.imageOverlay(mapData.img,lb,{opacity:1,interactive:false}).addTo(leafletMap);
   imageOverlay.on('load',()=>showMapLoading(false));
-  imageOverlay.on('error',()=>{showMapLoading(false);console.warn('Image failed:',mapData.img);});
+  imageOverlay.on('error',()=>{showMapLoading(false);});
   leafletMap.fitBounds(lb,{padding:[10,10]});
   leafletMap.setMaxBounds([[bounds.minZ-300,bounds.minX-300],[bounds.maxZ+300,bounds.maxX+300]]);
   buildFloorSwitcher(mapData.floors,mapData.id);
   setTimeout(()=>leafletMap.invalidateSize(),300);
-  renderMarkers();
-  renderQuestMapMarkers();
+  renderMarkers();renderQuestMapMarkers();
 }
-function buildFloorSwitcher(floors,mapId){const old=document.getElementById('floor-switcher');if(old)old.remove();if(!floors||floors.length<2)return;const sw=document.createElement('div');sw.id='floor-switcher';sw.style.cssText=`position:absolute;bottom:48px;left:50%;transform:translateX(-50%);z-index:600;display:flex;gap:4px;background:rgba(13,15,13,.9);border:1px solid var(--border2);border-radius:4px;padding:4px;pointer-events:all;`;floors.forEach((label,i)=>{const btn=document.createElement('button');btn.textContent=label;btn.className='tool-btn'+(i===0?' active':'');btn.style.cssText='min-width:60px;font-size:9px;padding:4px 8px;';btn.onclick=()=>switchFloor(i,mapId,floors,sw);sw.appendChild(btn);});document.getElementById('map-view-container').appendChild(sw);}
+function buildFloorSwitcher(floors,mapId){const old=document.getElementById('floor-switcher');if(old)old.remove();if(!floors||floors.length<2)return;const sw=document.createElement('div');sw.id='floor-switcher';sw.style.cssText=`position:absolute;bottom:3rem;left:50%;transform:translateX(-50%);z-index:600;display:flex;gap:0.25rem;background:rgba(13,15,13,.9);border:1px solid var(--border2);border-radius:0.25rem;padding:0.25rem;pointer-events:all;`;floors.forEach((label,i)=>{const btn=document.createElement('button');btn.textContent=label;btn.className='tool-btn'+(i===0?' active':'');btn.style.cssText='min-width:3.75rem;font-size:0.55rem;padding:0.25rem 0.5rem;';btn.onclick=()=>switchFloor(i,mapId,floors,sw);sw.appendChild(btn);});document.getElementById('map-view-container').appendChild(sw);}
 function switchFloor(index,mapId,floors,sw){activeFloor=index;sw.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===index));if(!imageOverlay)return;const mapData=MAPS.find(m=>m.id===mapId);if(!mapData)return;const src=index===0?mapData.img:mapData.img.replace('.png',`-${index}.png`);showMapLoading(true);imageOverlay.setUrl(src);imageOverlay.on('load',()=>showMapLoading(false));}
-function showMapLoading(show){let el=document.getElementById('map-loading');if(!el&&show){el=document.createElement('div');el.id='map-loading';el.style.cssText=`position:absolute;inset:0;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d0f0d;pointer-events:none;`;el.innerHTML=`<div style="width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div><div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);">LOADING</div>`;if(!document.getElementById('spin-style')){const s=document.createElement('style');s.id='spin-style';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}document.getElementById('map-view-container').appendChild(el);}else if(el&&!show){el.remove();}}
+function showMapLoading(show){let el=document.getElementById('map-loading');if(!el&&show){el=document.createElement('div');el.id='map-loading';el.style.cssText=`position:absolute;inset:0;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.75rem;background:#0d0f0d;pointer-events:none;`;el.innerHTML=`<div style="width:2rem;height:2rem;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div><div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.13rem;color:var(--muted);">LOADING</div>`;if(!document.getElementById('spin-style')){const s=document.createElement('style');s.id='spin-style';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}document.getElementById('map-view-container').appendChild(el);}else if(el&&!show){el.remove();}}
 
 // ── MARKERS ──────────────────────────────────────────────────────────────────
 function renderMarkers(){
@@ -774,13 +1146,13 @@ function renderMarkers(){
   });
   const el=document.getElementById('marker-list');
   document.getElementById('marker-count').textContent=markers.length;
-  if(!markers.length){el.innerHTML=`<div style="padding:10px 14px;font-family:var(--mono);font-size:10px;color:var(--muted);">NO MARKERS YET<br><span style="font-size:9px;color:var(--border2);">${isMobile()?'Long-press':'Right-click'} in ADD mode</span></div>`;return;}
-  el.innerHTML=markers.map(m=>{const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG.loot_misc;return`<div class="marker-item" onclick="flyToMarker(${m.lat},${m.lng})"><div style="background:${cfg.color}22;border:1px solid ${cfg.color};border-radius:4px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="${cfg.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg></div><div class="marker-item-name">${escHtml(m.name)}</div><div class="marker-item-cat">${cfg.label.toUpperCase()}</div></div>`;}).join('');
+  if(!markers.length){el.innerHTML=`<div style="padding:0.6rem 0.85rem;font-family:var(--mono);font-size:0.6rem;color:var(--muted);">NO MARKERS<br><span style="font-size:0.55rem;color:var(--border2);">${isMobile()?'Long-press':'Right-click'} map in ADD mode</span></div>`;return;}
+  el.innerHTML=markers.map(m=>{const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG.loot_misc;return`<div class="marker-item" onclick="flyToMarker(${m.lat},${m.lng})"><div style="background:${cfg.color}22;border:1px solid ${cfg.color};border-radius:0.25rem;width:1.25rem;height:1.25rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="${cfg.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg></div><div class="marker-item-name">${escHtml(m.name)}</div><div class="marker-item-cat">${cfg.label.toUpperCase()}</div></div>`;}).join('');
 }
-function showMarkerPopup(lm,m){const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG.loot_misc;L.popup({maxWidth:300,closeButton:true}).setLatLng([m.lat,m.lng]).setContent(`<div class="popup-inner"><div class="popup-cat" style="color:${cfg.color};display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${cfg.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg>${cfg.label}</div><div class="popup-title">${escHtml(m.name)}</div>${m.img?`<img class="popup-img" src="${m.img}" alt=""/>`:''}${m.desc?`<div class="popup-desc">${escHtml(m.desc)}</div>`:''}<div class="popup-coords">${m.lat.toFixed(1)}, ${m.lng.toFixed(1)}</div><div class="popup-actions"><button class="btn-sm" onclick="editMarker('${m.id}')">EDIT</button><button class="btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMarker('${m.id}')">DELETE</button></div></div>`).openOn(leafletMap);}
+function showMarkerPopup(lm,m){const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG.loot_misc;L.popup({maxWidth:300,closeButton:true}).setLatLng([m.lat,m.lng]).setContent(`<div class="popup-inner"><div class="popup-cat" style="color:${cfg.color};display:flex;align-items:center;gap:0.35rem;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${cfg.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg>${cfg.label}</div><div class="popup-title">${escHtml(m.name)}</div>${m.img?`<img class="popup-img" src="${m.img}" alt=""/>`:''}${m.desc?`<div class="popup-desc">${escHtml(m.desc)}</div>`:''}<div class="popup-coords">${m.lat.toFixed(1)}, ${m.lng.toFixed(1)}</div><div class="popup-actions"><button class="btn-sm" onclick="editMarker('${m.id}')">EDIT</button><button class="btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMarker('${m.id}')">DELETE</button></div></div>`).openOn(leafletMap);}
 function flyToMarker(lat,lng){switchView('map');closeMobileSidebar();leafletMap.flyTo([lat,lng],1,{duration:.6});}
 
-// ── MODAL ─────────────────────────────────────────────────────────────────────
+// ── MARKER MODAL ──────────────────────────────────────────────────────────────
 function openModal(title='ADD MARKER'){document.getElementById('modal-title-text').textContent=title;document.getElementById('modal-overlay').classList.add('open');state.pendingImgDataUrl=null;document.getElementById('img-preview').style.display='none';document.getElementById('img-drop').textContent='TAP TO UPLOAD IMAGE';document.getElementById('m-name').value='';document.getElementById('m-desc').value='';setTimeout(()=>document.getElementById('m-name').focus(),120);}
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');state.pendingLatLng=null;window._modalSaveOverride=null;}
 function saveMarker(){if(window._modalSaveOverride){window._modalSaveOverride();return;}if(!state.pendingLatLng||!state.activeMap)return;const name=document.getElementById('m-name').value.trim();if(!name){toast('Name is required',true);return;}const m={id:`m_${Date.now()}`,name,cat:document.getElementById('m-cat').value,desc:document.getElementById('m-desc').value.trim(),img:state.pendingImgDataUrl||null,lat:state.pendingLatLng.lat,lng:state.pendingLatLng.lng,created:Date.now()};const ms=loadMarkers(state.activeMap);ms.push(m);saveMarkersStore(state.activeMap,ms);closeModal();renderMarkers();toast('Marker saved');}
@@ -791,24 +1163,30 @@ function handleImgDrop(e){e.preventDefault();document.getElementById('img-drop')
 function readImgFile(file){const r=new FileReader();r.onload=ev=>{state.pendingImgDataUrl=ev.target.result;const p=document.getElementById('img-preview');p.src=ev.target.result;p.style.display='block';document.getElementById('img-drop').textContent=file.name;};r.readAsDataURL(file);}
 
 // ── EDIT MODE ─────────────────────────────────────────────────────────────────
-function toggleEditMode(){state.editMode=!state.editMode;const btn=document.getElementById('btn-edit');const hint=document.getElementById('edit-hint');btn.classList.toggle('active',state.editMode);hint.classList.toggle('show',state.editMode);document.getElementById('map-view-container').classList.toggle('edit-mode-active',state.editMode);btn.textContent=state.editMode?'✕ CANCEL':'✛ ADD';hint.textContent=isMobile()?'LONG-PRESS MAP TO ADD MARKER':'RIGHT-CLICK MAP TO ADD MARKER';}
+function toggleEditMode(){
+  if(state.questPinMode)exitQuestPinMode();
+  state.editMode=!state.editMode;
+  const btn=document.getElementById('btn-edit');const hint=document.getElementById('edit-hint');
+  btn.classList.toggle('active',state.editMode);hint.classList.toggle('show',state.editMode);
+  document.getElementById('map-view-container').classList.toggle('edit-mode-active',state.editMode);
+  btn.textContent=state.editMode?'✕ CANCEL':'✛ ADD';
+  hint.textContent=isMobile()?'LONG-PRESS MAP TO ADD MARKER':'RIGHT-CLICK MAP TO ADD MARKER';
+}
 
 // ── LAYER TOGGLES ─────────────────────────────────────────────────────────────
-function buildLayerToggles(){const el=document.getElementById('layer-toggles');let html=`<div class="layer-toggle-allrow"><button onclick="setAllLayers(true)">ALL ON</button><button onclick="setAllLayers(false)">ALL OFF</button></div>`;html+=Object.entries(CATEGORY_CONFIG).map(([id,cfg])=>`<button class="layer-toggle" id="lt-${id}" data-cat="${id}" onclick="toggleLayer('${id}')" title="${cfg.label}"><svg viewBox="0 0 24 24" fill="none" stroke="${cfg.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg><span class="layer-toggle-label">${cfg.label}</span></button>`).join('');el.innerHTML=html;}
+function buildLayerToggles(){const el=document.getElementById('layer-toggles');let html=`<div class="layer-toggle-allrow"><button onclick="setAllLayers(true)">ALL ON</button><button onclick="setAllLayers(false)">ALL OFF</button></div>`;html+=Object.entries(CATEGORY_CONFIG).map(([id,cfg])=>`<button class="layer-toggle" id="lt-${id}" onclick="toggleLayer('${id}')" title="${cfg.label}"><svg viewBox="0 0 24 24" fill="none" stroke="${cfg.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg><span class="layer-toggle-label">${cfg.label}</span></button>`).join('');el.innerHTML=html;}
 function toggleLayer(cat){categoryVisible[cat]=!categoryVisible[cat];const btn=document.getElementById(`lt-${cat}`);if(btn)btn.classList.toggle('off',!categoryVisible[cat]);renderMarkers();renderQuestMapMarkers();}
 function setAllLayers(on){Object.keys(categoryVisible).forEach(k=>{categoryVisible[k]=on;const btn=document.getElementById(`lt-${k}`);if(btn)btn.classList.toggle('off',!on);});renderMarkers();renderQuestMapMarkers();}
 
 // ── LOCATE ────────────────────────────────────────────────────────────────────
 function parseCoords(raw){const nums=raw.match(/-?\d+\.?\d*/g);if(!nums||nums.length<2)return null;const x=parseFloat(nums[0]);const y=nums.length>=3?parseFloat(nums[1]):null;const z=nums.length>=3?parseFloat(nums[2]):parseFloat(nums[1]);if(isNaN(x)||isNaN(z))return null;return{x,y,z};}
-function onCoordInput(input){const parsed=parseCoords(input.value);const preview=document.getElementById('coord-parse-preview');if(!preview)return;preview.textContent=parsed?`X: ${parsed.x.toFixed(1)}  Y: ${parsed.y!=null?parsed.y.toFixed(1):'—'}  Z: ${parsed.z.toFixed(1)}`:(input.value.length>2?'Cannot parse':'');}
-function locatePlayer(){const raw=document.getElementById('loc-paste').value;const parsed=parseCoords(raw);if(!parsed){toast('Paste coordinates or a screenshot filename',true);return;}clearPlayerMarker();const lat=parsed.z,lng=parsed.x;const icon=L.divIcon({html:`<div style="position:relative;width:20px;height:20px;"><div class="player-location-ring"></div><div style="width:10px;height:10px;background:var(--accent);border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid #000;box-shadow:0 0 6px var(--accent);"></div></div>`,className:'',iconSize:[20,20],iconAnchor:[10,10]});state.playerMarker=L.marker([lat,lng],{icon,zIndexOffset:1000}).addTo(leafletMap).bindPopup(`<div class="popup-inner"><div class="popup-cat" style="color:var(--accent)">YOUR POSITION</div><div class="popup-title">In-Game Location</div><div class="popup-coords">X: ${parsed.x.toFixed(1)} · Y: ${parsed.y!=null?parsed.y.toFixed(1):'—'} · Z: ${parsed.z.toFixed(1)}</div></div>`).openPopup();leafletMap.flyTo([lat,lng],leafletMap.getZoom(),{duration:.8});document.getElementById('btn-clear-player').style.display='';toast('Position plotted');}
+function onCoordInput(input){const p=parseCoords(input.value);const el=document.getElementById('coord-parse-preview');if(!el)return;el.textContent=p?`X:${p.x.toFixed(1)} Y:${p.y!=null?p.y.toFixed(1):'—'} Z:${p.z.toFixed(1)}`:(input.value.length>2?'Cannot parse':'');}
+function locatePlayer(){const raw=document.getElementById('loc-paste').value;const p=parseCoords(raw);if(!p){toast('Paste coordinates',true);return;}clearPlayerMarker();const icon=L.divIcon({html:`<div style="position:relative;width:1.25rem;height:1.25rem;"><div class="player-location-ring"></div><div style="width:0.625rem;height:0.625rem;background:var(--accent);border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid #000;box-shadow:0 0 6px var(--accent);"></div></div>`,className:'',iconSize:[20,20],iconAnchor:[10,10]});state.playerMarker=L.marker([p.z,p.x],{icon,zIndexOffset:1000}).addTo(leafletMap).bindPopup(`<div class="popup-inner"><div class="popup-cat" style="color:var(--accent)">YOUR POSITION</div><div class="popup-title">In-Game Location</div><div class="popup-coords">X:${p.x.toFixed(1)} Y:${p.y!=null?p.y.toFixed(1):'—'} Z:${p.z.toFixed(1)}</div></div>`).openPopup();leafletMap.flyTo([p.z,p.x],leafletMap.getZoom(),{duration:.8});document.getElementById('btn-clear-player').style.display='';toast('Position plotted');}
 function clearPlayerMarker(){if(state.playerMarker){state.playerMarker.remove();state.playerMarker=null;}document.getElementById('btn-clear-player').style.display='none';}
 
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function switchView(view){state.activeView=view;document.querySelectorAll('.nav-tab,.bot-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===view));const mv=document.getElementById('map-view-container');const ca=document.getElementById('content-area');if(view==='map'){mv.style.display='';ca.classList.remove('active');setTimeout(()=>leafletMap?.invalidateSize(),50);}else{mv.style.display='none';ca.classList.add('active');loadContentView(view);}}
-function loadContentView(view){const area=document.getElementById('content-area');area.innerHTML=`<div style="padding:40px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;">LOADING...</div>`;if(view==='market')loadMarketView(area);if(view==='quests')loadQuestsPageView(area);}
-
-// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function loadContentView(view){const area=document.getElementById('content-area');area.innerHTML=`<div style="padding:2.5rem;font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.13rem;">LOADING...</div>`;if(view==='market')loadMarketView(area);if(view==='quests')loadQuestsPageView(area);}
 function toggleSidebar(){state.sidebarOpen=!state.sidebarOpen;document.getElementById('sidebar').classList.toggle('collapsed',!state.sidebarOpen);document.getElementById('sidebar-toggle').textContent=state.sidebarOpen?'›':'‹';setTimeout(()=>leafletMap?.invalidateSize(),250);}
 function toggleMobileSidebar(){const s=document.getElementById('sidebar');s.classList.contains('mobile-open')?closeMobileSidebar():openMobileSidebar();}
 function openMobileSidebar(){document.getElementById('sidebar').classList.add('mobile-open');document.getElementById('sidebar-overlay').classList.add('open');}
@@ -820,123 +1198,73 @@ async function loadMarketView(area){
   try{
     const d=await tarkovQuery(`{items(lang:en,limit:200){name shortName avg24hPrice lastLowPrice changeLast48h category{name}iconLink}}`);
     const items=d.items.filter(i=>i.avg24hPrice>0).sort((a,b)=>b.avg24hPrice-a.avg24hPrice);
-    area.innerHTML=`<div class="mkt-wrap">
-      <div class="mkt-header">
-        <span class="mkt-header-label">FLEA MARKET</span>
-        <input class="mkt-search" placeholder="Search items..." oninput="filterMarket(this.value)" />
-      </div>
-      <div class="mkt-scroll">
-        <table class="mkt-table">
-          <thead><tr>
-            <th style="width:36px"></th>
-            <th>Item</th>
-            <th class="mkt-col-cat">Category</th>
-            <th>24h Avg</th>
-            <th class="mkt-col-low">Low</th>
-            <th class="mkt-col-change">Δ48h</th>
-          </tr></thead>
-          <tbody>
-            ${items.map(i=>{const ch=i.changeLast48h||0;const cc=ch>0?'#4a7c59':ch<0?'#8b3a3a':'var(--muted)';return`<tr class="mkt-row">
-              <td><img class="mkt-icon" src="${i.iconLink||''}" onerror="this.style.display='none'" /></td>
-              <td><span class="mkt-name-primary">${escHtml(i.shortName)}</span><span class="mkt-name-secondary">${escHtml(i.name)}</span></td>
-              <td class="mkt-col-cat"><span class="mkt-cat">${escHtml(i.category?.name||'—')}</span></td>
-              <td><span class="mkt-price">${fmt(i.avg24hPrice)}₽</span></td>
-              <td class="mkt-col-low"><span class="mkt-price-low">${fmt(i.lastLowPrice)}₽</span></td>
-              <td class="mkt-col-change"><span class="mkt-change" style="color:${cc}">${ch>0?'▲':ch<0?'▼':'·'} ${Math.abs(ch).toFixed(1)}%</span></td>
-            </tr>`;}).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+    area.innerHTML=`<div class="mkt-wrap"><div class="mkt-header">
+      <span class="mkt-header-label">FLEA MARKET</span>
+      <input class="mkt-search" placeholder="Search items..." oninput="filterMarket(this.value)" />
+    </div><div class="mkt-scroll"><table class="mkt-table">
+      <thead><tr>
+        <th style="width:2.2rem"></th>
+        <th>Item</th>
+        <th class="mkt-col-cat">Category</th>
+        <th>24h Avg</th>
+        <th class="mkt-col-low">Low</th>
+        <th class="mkt-col-change">Δ48h</th>
+      </tr></thead><tbody>
+        ${items.map(i=>{const ch=i.changeLast48h||0;const cc=ch>0?'#4a7c59':ch<0?'#8b3a3a':'var(--muted)';return`<tr class="mkt-row"><td><img class="mkt-icon" src="${i.iconLink||''}" onerror="this.style.display='none'"/></td><td><span class="mkt-name-primary">${escHtml(i.shortName)}</span><span class="mkt-name-secondary">${escHtml(i.name)}</span></td><td class="mkt-col-cat"><span class="mkt-cat">${escHtml(i.category?.name||'—')}</span></td><td><span class="mkt-price">${fmt(i.avg24hPrice)}₽</span></td><td class="mkt-col-low"><span class="mkt-price-low">${fmt(i.lastLowPrice)}₽</span></td><td class="mkt-col-change"><span class="mkt-change" style="color:${cc}">${ch>0?'▲':ch<0?'▼':'·'} ${Math.abs(ch).toFixed(1)}%</span></td></tr>`;}).join('')}
+      </tbody></table></div></div>`;
   }catch(e){area.innerHTML=apiError('market');}
 }
 window.filterMarket=q=>{const ql=q.toLowerCase();document.querySelectorAll('.mkt-row').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(ql)?'':'none');};
 
-// ── QUESTS PAGE VIEW ──────────────────────────────────────────────────────────
+// ── QUESTS PAGE ───────────────────────────────────────────────────────────────
 async function loadQuestsPageView(area){
-  if(!questData.length){
-    area.innerHTML=`<div style="padding:40px;font-family:var(--mono);font-size:11px;color:var(--muted);">LOADING QUESTS...</div>`;
-    await fetchQuestData();
-  }
+  if(!questData.length){area.innerHTML=`<div style="padding:2.5rem;font-family:var(--mono);font-size:0.65rem;color:var(--muted);">LOADING QUESTS...</div>`;await fetchQuestData();}
   const traders=[...new Set(questData.map(t=>t.trader.name))].sort();
-  area.innerHTML=`<div class="quests-wrap">
-    <div class="quests-header">
-      <span style="font-family:var(--mono);font-size:clamp(9px,1vw,11px);letter-spacing:2px;color:var(--muted);flex-shrink:0;">QUESTS</span>
-      <input id="qp-search" style="flex:1;min-width:80px;padding:8px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;border-radius:var(--radius);min-height:36px;" placeholder="Search..." oninput="filterQuestsPage()" />
-      <select id="qp-trader" style="padding:8px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;border-radius:var(--radius);min-height:36px;appearance:none;" onchange="filterQuestsPage()">
-        <option value="">ALL TRADERS</option>
-        ${traders.map(t=>`<option value="${t}">${t}</option>`).join('')}
-      </select>
-      <select id="qp-status" style="padding:8px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;border-radius:var(--radius);min-height:36px;appearance:none;" onchange="filterQuestsPage()">
-        <option value="">ALL STATUSES</option>
-        <option value="active">ACTIVE</option>
-        <option value="complete">COMPLETED</option>
-        <option value="none">NOT STARTED</option>
-      </select>
-    </div>
-    <div class="quests-grid" id="qp-grid">
-      ${questData.map(q=>renderQuestCard(q)).join('')}
-    </div>
-  </div>`;
+  area.innerHTML=`<div class="quests-wrap"><div class="quests-header">
+    <span style="font-family:var(--mono);font-size:0.65rem;letter-spacing:0.13rem;color:var(--muted);flex-shrink:0;">QUESTS</span>
+    <input id="qp-search" style="flex:1;min-width:5rem;padding:0.45rem 0.6rem;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:0.7rem;border-radius:var(--radius);min-height:2.2rem;" placeholder="Search..." oninput="filterQuestsPage()" />
+    <select id="qp-trader" style="padding:0.45rem 0.6rem;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:0.65rem;border-radius:var(--radius);min-height:2.2rem;appearance:none;" onchange="filterQuestsPage()">
+      <option value="">ALL TRADERS</option>${traders.map(t=>`<option value="${t}">${t}</option>`).join('')}
+    </select>
+    <select id="qp-status" style="padding:0.45rem 0.6rem;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:0.65rem;border-radius:var(--radius);min-height:2.2rem;appearance:none;" onchange="filterQuestsPage()">
+      <option value="">ALL STATUSES</option>
+      <option value="active">ACTIVE</option>
+      <option value="complete">COMPLETED</option>
+      <option value="none">NOT STARTED</option>
+    </select>
+  </div>
+  <div class="quests-grid" id="qp-grid">${questData.map(q=>renderQuestCard(q)).join('')}</div></div>`;
 }
 function renderQuestCard(q){
-  const status=getQuestStatus(q.id);
-  const pin=questPins[q.id];
-  return`<div class="quest-card status-${status}" data-trader="${q.trader.name}" data-status="${status}" data-qid="${q.id}">
-    ${status!=='none'?`<span class="quest-status-badge ${status}">${status.toUpperCase()}</span>`:''}
-    <div class="quest-card-header">
-      <div class="quest-card-name">${escHtml(q.name)}</div>
-      <div class="quest-card-lvl">LVL ${q.minPlayerLevel}</div>
-    </div>
+  const st=getQuestStatus(q.id);const pin=questPins[q.id];
+  return`<div class="quest-card status-${st}" data-trader="${q.trader.name}" data-status="${st}" data-qid="${q.id}">
+    ${st!=='none'?`<span class="quest-status-badge ${st}">${st.toUpperCase()}</span>`:''}
+    <div class="quest-card-header"><div class="quest-card-name">${escHtml(q.name)}</div><div class="quest-card-lvl">LVL ${q.minPlayerLevel}</div></div>
     <div class="quest-card-trader">${q.trader.name}</div>
     <div class="quest-card-objectives">
       ${q.objectives.slice(0,2).map(o=>`<div>· ${escHtml(o.description)}</div>`).join('')}
-      ${q.objectives.length>2?`<div style="color:var(--border2);font-size:11px;">+${q.objectives.length-2} more</div>`:''}
+      ${q.objectives.length>2?`<div style="color:var(--border2);font-size:0.65rem;">+${q.objectives.length-2} more</div>`:''}
     </div>
     <div class="quest-card-exp">+${fmt(q.experience)} EXP</div>
     <div class="quest-card-actions">
-      <button class="btn-sm" onclick="setQuestStatus('${q.id}','${status==='active'?'none':'active'}');refreshQuestCard('${q.id}')">${status==='active'?'DEACTIVATE':'SET ACTIVE'}</button>
-      <button class="btn-sm" style="${status==='complete'?'color:var(--complete-text);border-color:var(--complete-text)':''}" onclick="setQuestStatus('${q.id}','${status==='complete'?'none':'complete'}');refreshQuestCard('${q.id}')">${status==='complete'?'UNMARK':'COMPLETE'}</button>
+      <button class="btn-sm" onclick="setQuestStatus('${q.id}','${st==='active'?'none':'active'}');refreshQuestCard('${q.id}')">${st==='active'?'DEACTIVATE':'SET ACTIVE'}</button>
+      <button class="btn-sm" style="${st==='complete'?'color:var(--complete-col);border-color:var(--complete-col)':''}" onclick="setQuestStatus('${q.id}','${st==='complete'?'none':'complete'}');refreshQuestCard('${q.id}')">${st==='complete'?'UNMARK':'COMPLETE'}</button>
       <button class="btn-sm ${pin?'':''}${pin?'has-pin':''}" onclick="openQuestPinModal('${q.id}')" style="${pin?'color:var(--accent)':''}">📍 ${pin?MAPS.find(m=>m.id===pin.mapId)?.short||'PIN':'PIN'}</button>
       ${pin?`<button class="btn-sm" onclick="goToQuestPin('${q.id}');switchView('map')">GO TO</button>`:''}
     </div>
   </div>`;
 }
-function refreshQuestCard(qid){
-  const card=document.querySelector(`.quest-card[data-qid="${qid}"]`);
-  if(!card)return;
-  const q=questData.find(x=>x.id===qid);
-  if(!q)return;
-  const newCard=document.createElement('div');
-  newCard.innerHTML=renderQuestCard(q);
-  card.replaceWith(newCard.firstElementChild);
-}
-window.filterQuestsPage=()=>{
-  const search=(document.getElementById('qp-search')?.value||'').toLowerCase();
-  const trader=document.getElementById('qp-trader')?.value||'';
-  const status=document.getElementById('qp-status')?.value||'';
-  document.querySelectorAll('.quest-card').forEach(c=>{
-    const match=(!search||c.textContent.toLowerCase().includes(search))&&(!trader||c.dataset.trader===trader)&&(!status||c.dataset.status===status);
-    c.style.display=match?'':'none';
-  });
-};
+function refreshQuestCard(qid){const card=document.querySelector(`.quest-card[data-qid="${qid}"]`);if(!card)return;const q=questData.find(x=>x.id===qid);if(!q)return;const d=document.createElement('div');d.innerHTML=renderQuestCard(q);card.replaceWith(d.firstElementChild);}
+window.filterQuestsPage=()=>{const s=(document.getElementById('qp-search')?.value||'').toLowerCase();const tr=document.getElementById('qp-trader')?.value||'';const st=document.getElementById('qp-status')?.value||'';document.querySelectorAll('.quest-card').forEach(c=>{c.style.display=((!s||c.textContent.toLowerCase().includes(s))&&(!tr||c.dataset.trader===tr)&&(!st||c.dataset.status===st))?'':'none';});};
 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function fetchQuestData(){
-  try{
-    const d=await tarkovQuery(`{tasks(lang:en){id name trader{name}minPlayerLevel experience objectives{description}}}`);
-    questData=d.tasks;
-    populateQuestTraderFilter();
-    renderQuestTracker();
-    updateActiveQuestCount();
-  }catch(e){
-    const list=document.getElementById('qt-list');
-    if(list)list.innerHTML=`<div style="font-family:var(--mono);font-size:9px;color:var(--danger);padding:8px 4px;">Failed to load quests</div>`;
-  }
+  try{const d=await tarkovQuery(`{tasks(lang:en){id name trader{name}minPlayerLevel experience objectives{description}}}`);questData=d.tasks;populateQuestTraderFilter();renderQuestTracker();updateActiveQuestCount();}
+  catch(e){const l=document.getElementById('qt-list');if(l)l.innerHTML=`<div style="font-family:var(--mono);font-size:0.55rem;color:var(--danger);padding:0.5rem 0.25rem;">Failed to load quests</div>`;}
 }
-async function tarkovQuery(query){const res=await fetch(TARKOV_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});const json=await res.json();if(json.errors)throw new Error(json.errors[0].message);return json.data;}
+async function tarkovQuery(query){const r=await fetch(TARKOV_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});const j=await r.json();if(j.errors)throw new Error(j.errors[0].message);return j.data;}
 async function fetchApiStatus(){try{await tarkovQuery(`{__typename}`);document.getElementById('nav-wipe').textContent='WIPE ACTIVE';}catch(e){document.querySelector('.status-dot').style.background='var(--danger)';document.getElementById('nav-wipe').textContent='API ERR';}}
-function apiError(l){return`<div style="padding:40px;font-family:var(--mono);font-size:11px;color:var(--danger);letter-spacing:2px;">FAILED TO LOAD ${l.toUpperCase()}</div>`;}
+function apiError(l){return`<div style="padding:2.5rem;font-family:var(--mono);font-size:0.65rem;color:var(--danger);letter-spacing:0.13rem;">FAILED TO LOAD ${l.toUpperCase()}</div>`;}
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 let toastTimer;
