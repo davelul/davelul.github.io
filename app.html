@@ -513,6 +513,17 @@
     .quest-status-badge.active { background: rgba(74,124,89,.2); color: #4a9e6b; border: 1px solid rgba(74,124,89,.4); }
     .quest-status-badge.complete { background: rgba(42,74,58,.2); color: #6aaa8a; border: 1px solid rgba(106,170,138,.3); }
 
+    /* Quest picker in marker modal */
+    .mql-item { padding: 0.45rem 0.6rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+    .mql-item:last-child { border-bottom: none; }
+    .mql-item:hover { background: rgba(184,165,71,.08); }
+    .mql-item.selected { background: rgba(184,165,71,.1); }
+    .mql-item-name { font-size: 0.78rem; color: var(--text); line-height: 1.3; }
+    .mql-item-meta { font-family: var(--mono); font-size: 0.5rem; color: var(--muted); margin-top: 0.1rem; }
+    .mql-status { font-family: var(--mono); font-size: 0.45rem; padding: 0.1rem 0.3rem; border-radius: 0.15rem; margin-left: 0.35rem; vertical-align: middle; }
+    .mql-status.active { background: rgba(74,124,89,.2); color: #4a9e6b; }
+    .mql-status.complete { background: rgba(42,74,58,.2); color: #6aaa8a; }
+
     /* Toast */
     #toast {
       position: fixed; bottom: 1.25rem; left: 50%;
@@ -676,10 +687,10 @@
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="m-name" placeholder="e.g. Marked Room Key Spawn" /></div>
+      <!-- Category selector always first -->
       <div class="form-group">
         <label class="form-label">Category</label>
-        <select class="form-select" id="m-cat" style="background:var(--panel);border:1px solid var(--border2);color:var(--text);">
+        <select class="form-select" id="m-cat" onchange="onModalCatChange()" style="background:var(--panel);border:1px solid var(--border2);color:var(--text);">
           <optgroup label="── Spawns & Extracts">
             <option value="pmc_spawn">PMC Spawn</option><option value="pmc_exfil">PMC Extract</option>
             <option value="scav_spawn">Scav Spawn</option><option value="scav_exfil">Scav Extract</option><option value="boss">Boss Spawn</option>
@@ -693,7 +704,28 @@
           <optgroup label="── Other"><option value="stash">Stash / Cache</option><option value="hazard">Hazard / Mine</option></optgroup>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="m-desc" placeholder="Notes, tips, requirements..."></textarea></div>
+
+      <!-- Quest picker — shown only when category = quest -->
+      <div class="form-group" id="m-quest-group" style="display:none;">
+        <label class="form-label">Quest</label>
+        <input class="form-input" id="m-quest-search" placeholder="Search quest name or trader..." oninput="filterModalQuestList()" autocomplete="off" />
+        <div id="m-quest-list" style="max-height:11rem;overflow-y:auto;border:1px solid var(--border2);border-top:none;border-radius:0 0 var(--radius) var(--radius);background:var(--panel);"></div>
+        <!-- Selected quest display -->
+        <div id="m-quest-selected" style="display:none;margin-top:0.4rem;padding:0.5rem 0.6rem;background:rgba(184,165,71,.08);border:1px solid var(--accent);border-radius:var(--radius);">
+          <div style="font-family:var(--mono);font-size:0.55rem;color:var(--accent);letter-spacing:0.1rem;">LINKED QUEST</div>
+          <div id="m-quest-selected-name" style="font-size:0.85rem;color:var(--text);margin-top:0.2rem;line-height:1.3;"></div>
+          <div id="m-quest-selected-meta" style="font-family:var(--mono);font-size:0.5rem;color:var(--muted);margin-top:0.15rem;"></div>
+          <button onclick="clearModalQuestSelection()" style="margin-top:0.4rem;font-family:var(--mono);font-size:0.5rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;">✕ clear selection</button>
+        </div>
+      </div>
+
+      <!-- Name — hidden when quest is selected (auto-filled from quest) -->
+      <div class="form-group" id="m-name-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="m-name" placeholder="e.g. Marked Room Key Spawn" />
+      </div>
+
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="m-desc" placeholder="Floor, room, objective details..."></textarea></div>
       <div class="form-group">
         <label class="form-label">Image (optional)</label>
         <div id="img-drop" onclick="document.getElementById('img-file').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleImgDrop(event)">TAP TO UPLOAD IMAGE</div>
@@ -1153,11 +1185,182 @@ function showMarkerPopup(lm,m){const cfg=CATEGORY_CONFIG[m.cat]||CATEGORY_CONFIG
 function flyToMarker(lat,lng){switchView('map');closeMobileSidebar();leafletMap.flyTo([lat,lng],1,{duration:.6});}
 
 // ── MARKER MODAL ──────────────────────────────────────────────────────────────
-function openModal(title='ADD MARKER'){document.getElementById('modal-title-text').textContent=title;document.getElementById('modal-overlay').classList.add('open');state.pendingImgDataUrl=null;document.getElementById('img-preview').style.display='none';document.getElementById('img-drop').textContent='TAP TO UPLOAD IMAGE';document.getElementById('m-name').value='';document.getElementById('m-desc').value='';setTimeout(()=>document.getElementById('m-name').focus(),120);}
-function closeModal(){document.getElementById('modal-overlay').classList.remove('open');state.pendingLatLng=null;window._modalSaveOverride=null;}
-function saveMarker(){if(window._modalSaveOverride){window._modalSaveOverride();return;}if(!state.pendingLatLng||!state.activeMap)return;const name=document.getElementById('m-name').value.trim();if(!name){toast('Name is required',true);return;}const m={id:`m_${Date.now()}`,name,cat:document.getElementById('m-cat').value,desc:document.getElementById('m-desc').value.trim(),img:state.pendingImgDataUrl||null,lat:state.pendingLatLng.lat,lng:state.pendingLatLng.lng,created:Date.now()};const ms=loadMarkers(state.activeMap);ms.push(m);saveMarkersStore(state.activeMap,ms);closeModal();renderMarkers();toast('Marker saved');}
+let _modalSelectedQuestId = null;
+
+function openModal(title='ADD MARKER'){
+  document.getElementById('modal-title-text').textContent = title;
+  document.getElementById('modal-overlay').classList.add('open');
+  state.pendingImgDataUrl = null;
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('img-drop').textContent = 'TAP TO UPLOAD IMAGE';
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-desc').value = '';
+  document.getElementById('m-cat').value = 'pmc_spawn';
+  _modalSelectedQuestId = null;
+  onModalCatChange();
+  setTimeout(()=>document.getElementById('m-cat').focus(), 120);
+}
+
+function onModalCatChange(){
+  const cat = document.getElementById('m-cat').value;
+  const isQuest = cat === 'quest';
+  document.getElementById('m-quest-group').style.display = isQuest ? '' : 'none';
+  document.getElementById('m-name-group').style.display = isQuest ? 'none' : '';
+  if(isQuest){
+    renderModalQuestList('');
+    setTimeout(()=>document.getElementById('m-quest-search').focus(), 80);
+  }
+}
+
+function renderModalQuestList(search){
+  const list = document.getElementById('m-quest-list');
+  if(!questData.length){ list.innerHTML=`<div style="padding:0.5rem 0.6rem;font-family:var(--mono);font-size:0.55rem;color:var(--muted);">Loading quests...</div>`; return; }
+  const q = search.toLowerCase();
+  const filtered = q
+    ? questData.filter(x => x.name.toLowerCase().includes(q) || x.trader.name.toLowerCase().includes(q))
+    : questData.slice(0, 60);
+  if(!filtered.length){ list.innerHTML=`<div style="padding:0.5rem 0.6rem;font-family:var(--mono);font-size:0.55rem;color:var(--muted);">No results.</div>`; return; }
+  list.innerHTML = filtered.map(x => {
+    const st = getQuestStatus(x.id);
+    const stBadge = st !== 'none' ? `<span class="mql-status ${st}">${st.toUpperCase()}</span>` : '';
+    const sel = _modalSelectedQuestId === x.id ? ' selected' : '';
+    return `<div class="mql-item${sel}" onclick="selectModalQuest('${x.id}')">
+      <div class="mql-item-name">${escHtml(x.name)}${stBadge}</div>
+      <div class="mql-item-meta">${x.trader.name} · Level ${x.minPlayerLevel}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterModalQuestList(){
+  renderModalQuestList(document.getElementById('m-quest-search').value);
+}
+
+function selectModalQuest(qid){
+  _modalSelectedQuestId = qid;
+  const q = questData.find(x => x.id === qid);
+  if(!q) return;
+  // Show selected panel, hide list
+  document.getElementById('m-quest-list').style.display = 'none';
+  document.getElementById('m-quest-search').style.display = 'none';
+  document.getElementById('m-quest-selected').style.display = '';
+  document.getElementById('m-quest-selected-name').textContent = q.name;
+  document.getElementById('m-quest-selected-meta').textContent = `${q.trader.name} · Level ${q.minPlayerLevel} · +${fmt(q.experience)} EXP`;
+}
+
+function clearModalQuestSelection(){
+  _modalSelectedQuestId = null;
+  document.getElementById('m-quest-list').style.display = '';
+  document.getElementById('m-quest-search').style.display = '';
+  document.getElementById('m-quest-search').value = '';
+  document.getElementById('m-quest-selected').style.display = 'none';
+  renderModalQuestList('');
+}
+
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('open');
+  state.pendingLatLng = null;
+  window._modalSaveOverride = null;
+  _modalSelectedQuestId = null;
+  // Reset quest picker UI
+  clearModalQuestSelection();
+  document.getElementById('m-quest-group').style.display = 'none';
+  document.getElementById('m-name-group').style.display = '';
+}
+
+function saveMarker(){
+  if(window._modalSaveOverride){ window._modalSaveOverride(); return; }
+  if(!state.pendingLatLng || !state.activeMap) return;
+
+  const cat = document.getElementById('m-cat').value;
+  const isQuest = cat === 'quest';
+
+  // Validate
+  if(isQuest && !_modalSelectedQuestId){ toast('Select a quest from the list', true); return; }
+  const manualName = document.getElementById('m-name').value.trim();
+  if(!isQuest && !manualName){ toast('Name is required', true); return; }
+
+  // Determine name
+  const questObj = isQuest ? questData.find(q => q.id === _modalSelectedQuestId) : null;
+  const name = isQuest ? questObj.name : manualName;
+
+  const m = {
+    id: `m_${Date.now()}`,
+    name,
+    cat,
+    desc: document.getElementById('m-desc').value.trim(),
+    img: state.pendingImgDataUrl || null,
+    lat: state.pendingLatLng.lat,
+    lng: state.pendingLatLng.lng,
+    questId: isQuest ? _modalSelectedQuestId : null,
+    created: Date.now()
+  };
+
+  const ms = loadMarkers(state.activeMap);
+  ms.push(m);
+  saveMarkersStore(state.activeMap, ms);
+
+  // Also save to questPins so it appears in the quest tracker
+  if(isQuest && _modalSelectedQuestId){
+    questPins[_modalSelectedQuestId] = {
+      mapId: state.activeMap,
+      x: Math.round(state.pendingLatLng.lng * 10) / 10,
+      z: Math.round(state.pendingLatLng.lat * 10) / 10,
+      notes: document.getElementById('m-desc').value.trim()
+    };
+    saveQuestState();
+    renderQuestTracker();
+    updateActiveQuestCount();
+  }
+
+  closeModal();
+  renderMarkers();
+  renderQuestMapMarkers();
+  toast(isQuest ? `Quest pin saved: ${name}` : 'Marker saved');
+}
 function deleteMarker(id){if(!state.activeMap)return;saveMarkersStore(state.activeMap,loadMarkers(state.activeMap).filter(m=>m.id!==id));leafletMap.closePopup();renderMarkers();toast('Marker deleted');}
-function editMarker(id){const ms=loadMarkers(state.activeMap);const m=ms.find(x=>x.id===id);if(!m)return;leafletMap.closePopup();state.pendingLatLng={lat:m.lat,lng:m.lng};state.pendingImgDataUrl=m.img||null;openModal('EDIT MARKER');document.getElementById('m-name').value=m.name;document.getElementById('m-cat').value=m.cat;document.getElementById('m-desc').value=m.desc||'';if(m.img){const p=document.getElementById('img-preview');p.src=m.img;p.style.display='block';document.getElementById('img-drop').textContent='Image loaded — tap to replace';}window._modalSaveOverride=()=>{const name=document.getElementById('m-name').value.trim();if(!name){toast('Name is required',true);return;}saveMarkersStore(state.activeMap,ms.map(x=>x.id===id?{...x,name,cat:document.getElementById('m-cat').value,desc:document.getElementById('m-desc').value.trim(),img:state.pendingImgDataUrl!==undefined?state.pendingImgDataUrl:x.img}:x));window._modalSaveOverride=null;closeModal();renderMarkers();toast('Marker updated');};}
+function editMarker(id){
+  const ms = loadMarkers(state.activeMap);
+  const m = ms.find(x => x.id === id);
+  if(!m) return;
+  leafletMap.closePopup();
+  state.pendingLatLng = {lat: m.lat, lng: m.lng};
+  state.pendingImgDataUrl = m.img || null;
+  openModal('EDIT MARKER');
+  document.getElementById('m-cat').value = m.cat;
+  document.getElementById('m-desc').value = m.desc || '';
+  onModalCatChange();
+  if(m.cat === 'quest' && m.questId){
+    selectModalQuest(m.questId);
+  } else {
+    document.getElementById('m-name').value = m.name;
+  }
+  if(m.img){
+    const p = document.getElementById('img-preview');
+    p.src = m.img; p.style.display = 'block';
+    document.getElementById('img-drop').textContent = 'Image loaded — tap to replace';
+  }
+  window._modalSaveOverride = () => {
+    const cat = document.getElementById('m-cat').value;
+    const isQuest = cat === 'quest';
+    if(isQuest && !_modalSelectedQuestId){ toast('Select a quest', true); return; }
+    const manualName = document.getElementById('m-name').value.trim();
+    if(!isQuest && !manualName){ toast('Name is required', true); return; }
+    const questObj = isQuest ? questData.find(q => q.id === _modalSelectedQuestId) : null;
+    const name = isQuest ? questObj.name : manualName;
+    const updated = {...m, name, cat, desc: document.getElementById('m-desc').value.trim(),
+      img: state.pendingImgDataUrl !== undefined ? state.pendingImgDataUrl : m.img,
+      questId: isQuest ? _modalSelectedQuestId : null };
+    saveMarkersStore(state.activeMap, ms.map(x => x.id === id ? updated : x));
+    if(isQuest && _modalSelectedQuestId){
+      questPins[_modalSelectedQuestId] = {mapId: state.activeMap,
+        x: Math.round(m.lng*10)/10, z: Math.round(m.lat*10)/10,
+        notes: document.getElementById('m-desc').value.trim()};
+      saveQuestState(); renderQuestTracker(); updateActiveQuestCount();
+    }
+    window._modalSaveOverride = null;
+    closeModal(); renderMarkers(); renderQuestMapMarkers(); toast('Marker updated');
+  };
+}
 function handleImgSelect(e){const f=e.target.files[0];if(f)readImgFile(f);}
 function handleImgDrop(e){e.preventDefault();document.getElementById('img-drop').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))readImgFile(f);}
 function readImgFile(file){const r=new FileReader();r.onload=ev=>{state.pendingImgDataUrl=ev.target.result;const p=document.getElementById('img-preview');p.src=ev.target.result;p.style.display='block';document.getElementById('img-drop').textContent=file.name;};r.readAsDataURL(file);}
